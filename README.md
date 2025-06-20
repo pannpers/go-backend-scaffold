@@ -65,6 +65,47 @@ The HTTP server will start on port 8080.
 
 The gRPC server is configured to run on port 9090 with reflection enabled for development tools like `grpcurl`.
 
+### Testing the API with buf curl
+
+You can test your Connect API endpoints using [buf curl](https://docs.buf.build/reference/curl), which allows you to invoke RPCs using your protobuf schema.
+
+#### Prerequisites
+
+- [buf CLI](https://docs.buf.build/installation)
+- The Connect server running locally (see below)
+- Access to your protobuf schema (e.g., `../protobuf-scaffold`)
+
+#### Start the Connect Server
+
+```bash
+go run cmd/api/main.go
+```
+
+The Connect server will start on port 9090.
+
+#### Example: GetUser
+
+```bash
+buf curl --schema ../protobuf-scaffold --protocol connect \
+  -d '{"user_id": "123"}' \
+  http://localhost:9090/api.UserService/GetUser
+```
+
+#### Example: CreateUser
+
+```bash
+buf curl --schema ../protobuf-scaffold --protocol connect \
+  -d '{"user": {"id": {"value": "test123"}, "name": {"value": "John Doe"}, "email": {"value": "john@example.com"}}}' \
+  http://localhost:9090/api.UserService/CreateUser
+```
+
+#### Notes
+
+- **Service paths:** Use `/api.UserService/` and `/api.PostService/` (not `connect.api.v1.UserService`).
+- **Protocol:** Always use `--protocol connect` for Connect servers.
+- **Schema:** Point `--schema` to your local protobuf directory or module root (e.g., `../protobuf-scaffold`).
+- **No need for `--http2-prior-knowledge`**: The Connect server works with plain HTTP/1.1 for buf curl.
+
 ### Development
 
 #### Logger Usage
