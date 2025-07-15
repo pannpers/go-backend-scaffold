@@ -1,14 +1,15 @@
-package logger
+package logging_test
 
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/pannpers/go-backend-scaffold/pkg/logging"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -43,25 +44,29 @@ func normalizeOutput(output string) string {
 }
 
 func TestLogger_LevelMethods(t *testing.T) {
+	t.Parallel()
 	type args struct {
 		ctx   context.Context
 		msg   string
+		err   error // Add error field for Error method
 		attrs []slog.Attr
 	}
 	tests := []struct {
 		name         string
-		opts         []Option // Options for Logger.New
-		methodToCall func(l *Logger, ctx context.Context, msg string, attrs ...slog.Attr)
+		opts         []logging.Option                                                                        // Options for Logger.New
+		methodToCall func(l *logging.Logger, ctx context.Context, msg string, err error, attrs ...slog.Attr) // Updated signature for Error method
 		args         args
 		wantOutput   string // Expected output *without* time, after trimming space.
 	}{
 		{
 			name: "Info_JSON_NoTrace_NoAttrs",
-			opts: []Option{
-				WithLevel(slog.LevelInfo),
-				WithFormat(FormatJSON),
+			opts: []logging.Option{
+				logging.WithLevel(slog.LevelInfo),
+				logging.WithFormat(logging.FormatJSON),
 			},
-			methodToCall: (*Logger).Info,
+			methodToCall: func(l *logging.Logger, ctx context.Context, msg string, _ error, attrs ...slog.Attr) {
+				l.Info(ctx, msg, attrs...)
+			},
 			args: args{
 				ctx: context.Background(),
 				msg: "hello info",
@@ -70,11 +75,13 @@ func TestLogger_LevelMethods(t *testing.T) {
 		},
 		{
 			name: "Info_JSON_NoTrace_WithAttrs",
-			opts: []Option{
-				WithLevel(slog.LevelInfo),
-				WithFormat(FormatJSON),
+			opts: []logging.Option{
+				logging.WithLevel(slog.LevelInfo),
+				logging.WithFormat(logging.FormatJSON),
 			},
-			methodToCall: (*Logger).Info,
+			methodToCall: func(l *logging.Logger, ctx context.Context, msg string, _ error, attrs ...slog.Attr) {
+				l.Info(ctx, msg, attrs...)
+			},
 			args: args{
 				ctx:   context.Background(),
 				msg:   "info with attrs",
@@ -84,11 +91,13 @@ func TestLogger_LevelMethods(t *testing.T) {
 		},
 		{
 			name: "Debug_BelowInfoLevel_JSON_ShouldBeEmpty",
-			opts: []Option{
-				WithLevel(slog.LevelInfo), // Logger configured at INFO
-				WithFormat(FormatJSON),
+			opts: []logging.Option{
+				logging.WithLevel(slog.LevelInfo), // Logger configured at INFO
+				logging.WithFormat(logging.FormatJSON),
 			},
-			methodToCall: (*Logger).Debug, // Logging DEBUG message
+			methodToCall: func(l *logging.Logger, ctx context.Context, msg string, _ error, attrs ...slog.Attr) {
+				l.Debug(ctx, msg, attrs...)
+			},
 			args: args{
 				ctx: context.Background(),
 				msg: "hello debug, should not see me",
@@ -97,92 +106,106 @@ func TestLogger_LevelMethods(t *testing.T) {
 		},
 		{
 			name: "Debug_AtDebugLevel_JSON_NoTrace",
-			opts: []Option{
-				WithLevel(slog.LevelDebug),
-				WithFormat(FormatJSON),
+			opts: []logging.Option{
+				logging.WithLevel(slog.LevelDebug),
+				logging.WithFormat(logging.FormatJSON),
 			},
-			methodToCall: (*Logger).Debug,
+			methodToCall: func(l *logging.Logger, ctx context.Context, msg string, _ error, attrs ...slog.Attr) {
+				l.Debug(ctx, msg, attrs...)
+			},
 			args: args{
 				ctx:   context.Background(),
 				msg:   "hello debug",
-				attrs: []slog.Attr{slog.Bool("processed", true)}},
+				attrs: []slog.Attr{slog.Bool("processed", true)},
+			},
 			wantOutput: `{"level":"DEBUG","msg":"hello debug","processed":true}`,
 		},
 		{
 			name: "Warn_Text_WithTrace_WithAttrs",
-			opts: []Option{
-				WithLevel(slog.LevelWarn),
-				WithFormat(FormatText),
+			opts: []logging.Option{
+				logging.WithLevel(slog.LevelWarn),
+				logging.WithFormat(logging.FormatText),
 			},
-			methodToCall: (*Logger).Warn,
+			methodToCall: func(l *logging.Logger, ctx context.Context, msg string, _ error, attrs ...slog.Attr) {
+				l.Warn(ctx, msg, attrs...)
+			},
 			args: args{
 				ctx:   contextWithTrace("0102030405060708090a0b0c0d0e0f10", "a1a2a3a4a5a6a7a8"),
 				msg:   "warning with trace and attrs",
-				attrs: []slog.Attr{slog.String("module", "auth")}},
+				attrs: []slog.Attr{slog.String("module", "auth")},
+			},
 			// Order: level, msg, trace_id, span_id, user_attrs
-			wantOutput: `level=WARN msg="warning with trace and attrs" trace_id=0102030405060708090a0b0c0d0e0f10 span_id=a1a2a3a4a5a6a7a8 module=auth`,
+			wantOutput: `level=WARN msg="warning with trace and attrs" ` +
+				`trace_id=0102030405060708090a0b0c0d0e0f10 span_id=a1a2a3a4a5a6a7a8 module=auth`,
 		},
 		{
 			name: "Error_JSON_WithTrace_NoAttrs",
-			opts: []Option{
-				WithLevel(slog.LevelError),
-				WithFormat(FormatJSON),
+			opts: []logging.Option{
+				logging.WithLevel(slog.LevelError),
+				logging.WithFormat(logging.FormatJSON),
 			},
-			methodToCall: (*Logger).Error,
+			methodToCall: (*logging.Logger).Error,
 			args: args{
 				ctx: contextWithTrace("112233445566778899aabbccddeeff00", "b1b2b3b4b5b6b7b8"),
-				msg: "critical error occurred"},
-			wantOutput: `{"level":"ERROR","msg":"critical error occurred","trace_id":"112233445566778899aabbccddeeff00","span_id":"b1b2b3b4b5b6b7b8"}`,
+				msg: "critical error occurred",
+				err: errors.New("database connection failed"),
+			},
+			wantOutput: `{"level":"ERROR","msg":"critical error occurred",` +
+				`"trace_id":"112233445566778899aabbccddeeff00","span_id":"b1b2b3b4b5b6b7b8","error":"database connection failed"}`,
 		},
 		{
 			name: "Info_DefaultFormatText_NoTrace_WithAttrs", // Default format is Text from options.go
-			opts: []Option{
-				WithLevel(slog.LevelInfo),
+			opts: []logging.Option{
+				logging.WithLevel(slog.LevelInfo),
 				// No WithFormat, should use default from options.go (FormatText)
 			},
-			methodToCall: (*Logger).Info,
+			methodToCall: func(l *logging.Logger, ctx context.Context, msg string, _ error, attrs ...slog.Attr) {
+				l.Info(ctx, msg, attrs...)
+			},
 			args: args{
 				ctx:   context.Background(),
 				msg:   "info with default text format",
-				attrs: []slog.Attr{slog.String("user", "default_user")}},
+				attrs: []slog.Attr{slog.String("user", "default_user")},
+			},
 			wantOutput: `level=INFO msg="info with default text format" user=default_user`,
 		},
 		{
 			name: "Error_Text_NoTrace_NoAttrs",
-			opts: []Option{
-				WithLevel(slog.LevelError),
-				WithFormat(FormatText),
+			opts: []logging.Option{
+				logging.WithLevel(slog.LevelError),
+				logging.WithFormat(logging.FormatText),
 			},
-			methodToCall: (*Logger).Error,
+			methodToCall: (*logging.Logger).Error,
 			args: args{
 				ctx: context.Background(),
-				msg: "plain error text"},
-			wantOutput: `level=ERROR msg="plain error text"`,
+				msg: "plain error text",
+				err: errors.New("something went wrong"),
+			},
+			wantOutput: `level=ERROR msg="plain error text" error="something went wrong"`,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
 			var buf bytes.Buffer
+			opts := tc.opts
 			// Ensure buffer is used for output by adding WithWriter to the logger options.
-			// Make a copy of tt.opts to avoid modifying the slice in the test table.
-			currentOpts := make([]Option, len(tt.opts))
-			copy(currentOpts, tt.opts)
-			// For testing, always add WithWriter and the ReplaceAttr to remove time.
-			currentOpts = append(currentOpts, WithWriter(&buf), WithReplaceAttr(func(groups []string, a slog.Attr) slog.Attr {
+			opts = append(opts, logging.WithWriter(&buf), logging.WithReplaceAttr(func(_ []string, a slog.Attr) slog.Attr {
 				if a.Key == slog.TimeKey {
 					return slog.Attr{} // Discard time attribute for test stability
 				}
 				return a
 			}))
 
-			logger := New(currentOpts...)
+			logger := logging.New(opts...)
 
-			tt.methodToCall(logger, tt.args.ctx, tt.args.msg, tt.args.attrs...)
+			tc.methodToCall(logger, tc.args.ctx, tc.args.msg, tc.args.err, tc.args.attrs...)
 
 			gotOutput := normalizeOutput(buf.String())
 
-			assert.Equal(t, tt.wantOutput, gotOutput, "Unexpected log output for '%s'", tt.name)
+			if gotOutput != tc.wantOutput {
+				t.Errorf("Unexpected log output for '%s':\nwant: %q\ngot:  %q", tc.name, tc.wantOutput, gotOutput)
+			}
 		})
 	}
 }

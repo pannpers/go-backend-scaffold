@@ -1,18 +1,12 @@
-package logger
+package logging
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
-	"go.opentelemetry.io/otel/trace" // Import the OTEL trace package
-)
-
-// Following https://opentelemetry.io/docs/specs/semconv/general/naming/.
-const (
-	// traceIDKey is the context key for trace ID.
-	traceIDKey string = "trace_id"
-	// spanIDKey is the context key for span ID.
-	spanIDKey string = "span_id"
+	"github.com/pannpers/go-backend-scaffold/pkg/logging/attr"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Logger is a structured logger using slog.
@@ -22,10 +16,8 @@ type Logger struct {
 
 // New creates a new Logger with the given options.
 func New(opts ...Option) *Logger {
-	// Start with default options.
 	o := defaultOptions()
 
-	// Apply all options.
 	for _, opt := range opts {
 		opt(o)
 	}
@@ -40,9 +32,9 @@ func New(opts ...Option) *Logger {
 	case FormatText:
 		handler = slog.NewTextHandler(o.writer, handlerOpts)
 	case FormatJSON:
-		fallthrough
-	default:
 		handler = slog.NewJSONHandler(o.writer, handlerOpts)
+	default:
+		panic(fmt.Sprintf("unknown logger format: %d", o.format))
 	}
 
 	logger := slog.New(handler)
@@ -68,8 +60,14 @@ func (l *Logger) Warn(ctx context.Context, msg string, args ...slog.Attr) {
 }
 
 // Error logs an error message.
-func (l *Logger) Error(ctx context.Context, msg string, args ...slog.Attr) {
-	l.log(ctx, slog.LevelError, msg, args...)
+func (l *Logger) Error(ctx context.Context, msg string, err error, args ...slog.Attr) {
+	errorAttr := slog.String(attr.Error, err.Error())
+
+	allArgs := make([]slog.Attr, 0, len(args)+1)
+	allArgs = append(allArgs, errorAttr)
+	allArgs = append(allArgs, args...)
+
+	l.log(ctx, slog.LevelError, msg, allArgs...)
 }
 
 // With returns a logger with the given attributes.
@@ -88,28 +86,26 @@ func (l *Logger) log(ctx context.Context, level slog.Level, msg string, args ...
 	// Extract trace and span IDs from context.
 	contextAttrs := fromContext(ctx)
 
-	// Combine context attributes with provided args.
 	allArgs := make([]slog.Attr, 0, len(contextAttrs)+len(args))
 	allArgs = append(allArgs, contextAttrs...)
 	allArgs = append(allArgs, args...)
 
-	// Log with the combined attributes.
 	l.logger.LogAttrs(ctx, level, msg, allArgs...)
 }
 
 // fromContext extracts trace and span IDs from context using OpenTelemetry.
 func fromContext(ctx context.Context) []slog.Attr {
 	var attrs []slog.Attr
-	// Get the SpanContext from the context
 	spanContext := trace.SpanFromContext(ctx).SpanContext()
 
-	// If the SpanContext is not valid, there are no trace IDs to add.
 	if !spanContext.IsValid() {
 		return attrs
 	}
-	// If spanContext.IsValid() is true, then TraceID and SpanID are also valid and non-zero.
-	attrs = append(attrs, slog.String(traceIDKey, spanContext.TraceID().String()))
-	attrs = append(attrs, slog.String(spanIDKey, spanContext.SpanID().String()))
+
+	attrs = append(attrs,
+		slog.String(attr.TraceID, spanContext.TraceID().String()),
+		slog.String(attr.SpanID, spanContext.SpanID().String()),
+	)
 
 	return attrs
 }
