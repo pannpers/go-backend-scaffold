@@ -5,20 +5,23 @@ import (
 	"errors"
 
 	"github.com/bufbuild/connect-go"
+	"github.com/pannpers/go-backend-scaffold/pkg/logging"
 	api "github.com/pannpers/protobuf-scaffold/gen/go/proto/api/v1"
 	entity "github.com/pannpers/protobuf-scaffold/gen/go/proto/entity/v1"
 )
 
 // UserHandler implements the UserService Connect interface.
 type UserHandler struct {
+	logger *logging.Logger
 	// Add your use case dependencies here.
 	// For example:
 	// userUseCase usecase.UserUseCase.
 }
 
 // NewUserHandler creates a new user handler.
-func NewUserHandler() *UserHandler {
+func NewUserHandler(logger *logging.Logger) *UserHandler {
 	return &UserHandler{
+		logger: logger,
 		// Initialize your dependencies here.
 	}
 }
@@ -79,14 +82,16 @@ func (h *UserHandler) CreateUser(ctx context.Context, req *connect.Request[api.C
 
 // PostHandler implements the PostService Connect interface.
 type PostHandler struct {
+	logger *logging.Logger
 	// Add your use case dependencies here.
 	// For example:
 	// postUseCase usecase.PostUseCase.
 }
 
 // NewPostHandler creates a new post handler.
-func NewPostHandler() *PostHandler {
+func NewPostHandler(logger *logging.Logger) *PostHandler {
 	return &PostHandler{
+		logger: logger,
 		// Initialize your dependencies here.
 	}
 }

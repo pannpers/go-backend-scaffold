@@ -8,15 +8,74 @@ package di
 
 import (
 	"github.com/pannpers/go-backend-scaffold/internal/adapter/connect"
+	"github.com/pannpers/go-backend-scaffold/internal/infrastructure/database/rdb"
 	"github.com/pannpers/go-backend-scaffold/internal/infrastructure/server"
+	"github.com/pannpers/go-backend-scaffold/pkg/config"
+	"github.com/pannpers/go-backend-scaffold/pkg/logging"
+	"io"
+	"log/slog"
 )
 
 // Injectors from wire.go:
 
-// InitializeConnectServer creates a new Connect server with all dependencies wired up.
-func InitializeConnectServer() (*server.ConnectServer, error) {
-	userHandler := connect.NewUserHandler()
-	postHandler := connect.NewPostHandler()
-	connectServer := server.NewConnectServer(userHandler, postHandler)
-	return connectServer, nil
+// InitializeApp creates a new App with all dependencies wired up.
+func InitializeApp() (*App, error) {
+	config, err := provideConfig()
+	if err != nil {
+		return nil, err
+	}
+	logger := provideLogger(config)
+	userHandler := connect.NewUserHandler(logger)
+	postHandler := connect.NewPostHandler(logger)
+	connectServer := server.NewConnectServer(config, logger, userHandler, postHandler)
+	database, err := provideDatabase(config, logger)
+	if err != nil {
+		return nil, err
+	}
+	app := newApp(connectServer, database)
+	return app, nil
+}
+
+// wire.go:
+
+func newApp(server2 *server.ConnectServer, db *rdb.Database) *App {
+	return &App{
+		Server:  server2,
+		Closers: []io.Closer{db},
+	}
+}
+
+// provideConfig creates a new config instance.
+func provideConfig() (*config.Config, error) {
+	return config.Load("")
+}
+
+// provideLogger creates a new logger instance based on config.
+func provideLogger(cfg *config.Config) *logging.Logger {
+	var opts []logging.Option
+
+	switch cfg.Logging.Level {
+	case "debug":
+		opts = append(opts, logging.WithLevel(slog.LevelDebug))
+	case "info":
+		opts = append(opts, logging.WithLevel(slog.LevelInfo))
+	case "warn":
+		opts = append(opts, logging.WithLevel(slog.LevelWarn))
+	case "error":
+		opts = append(opts, logging.WithLevel(slog.LevelError))
+	}
+
+	switch cfg.Logging.Format {
+	case "text":
+		opts = append(opts, logging.WithFormat(logging.FormatText))
+	case "json":
+		opts = append(opts, logging.WithFormat(logging.FormatJSON))
+	}
+
+	return logging.New(opts...)
+}
+
+// provideDatabase creates a new database instance.
+func provideDatabase(cfg *config.Config, logger *logging.Logger) (*rdb.Database, error) {
+	return rdb.New(cfg, logger)
 }
