@@ -94,6 +94,7 @@ func TestAppErr_Is(t *testing.T) {
 	type args struct {
 		target error
 	}
+
 	tests := []struct {
 		name   string
 		appErr *AppErr
@@ -322,7 +323,6 @@ func TestAppErr_LogValue(t *testing.T) {
 					}
 				}
 			}
-
 		})
 	}
 }
@@ -343,12 +343,14 @@ func TestNew(t *testing.T) {
 		msg   string
 		attrs []slog.Attr
 	}
+
 	type want struct {
 		err      error
 		code     codes.Code
 		attrs    []slog.Attr
 		errorStr string
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -403,6 +405,7 @@ func TestNew(t *testing.T) {
 			if appErr.Cause != nil {
 				t.Errorf("New() Cause should be nil, got %v", appErr.Cause)
 			}
+
 			if appErr.Code != tt.want.code {
 				t.Errorf("New() Code = %v, want %v", appErr.Code, tt.want.code)
 			}
@@ -417,8 +420,10 @@ func TestNew(t *testing.T) {
 			for _, attr := range appErr.Attrs {
 				if attr.Key == "stacktrace" {
 					validateStackTrace(t, attr.Value.String())
+
 					continue
 				}
+
 				if !containsAttr(tt.want.attrs, attr) {
 					t.Errorf("Unexpected attribute found: %s = %s", attr.Key, attr.Value.String())
 				}
@@ -439,6 +444,7 @@ func TestWrap(t *testing.T) {
 		msg   string
 		attrs []slog.Attr
 	}
+
 	type want struct {
 		err      error
 		cause    error
@@ -446,6 +452,7 @@ func TestWrap(t *testing.T) {
 		attrs    []slog.Attr
 		errorStr string
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -558,6 +565,7 @@ func TestWrap(t *testing.T) {
 					t.Errorf("Wrap() Cause = %v, want %v", appErr.Cause, tt.want.cause)
 				}
 			}
+
 			if appErr.Code != tt.want.code {
 				t.Errorf("Wrap() Code = %v, want %v", appErr.Code, tt.want.code)
 			}
@@ -572,8 +580,10 @@ func TestWrap(t *testing.T) {
 			for _, attr := range appErr.Attrs {
 				if attr.Key == "stacktrace" {
 					validateStackTrace(t, attr.Value.String())
+
 					continue
 				}
+
 				if !containsAttr(tt.want.attrs, attr) {
 					t.Errorf("Unexpected attribute found: %s = %s", attr.Key, attr.Value.String())
 				}
@@ -596,7 +606,7 @@ func TestWrap(t *testing.T) {
 // Helper functions for testing
 
 // validateStackTrace validates that the stack trace is properly formatted
-// and contains expected package information, and that the caller is present in the first stack frame
+// and contains expected package information, and that the caller is present in the first stack frame.
 func validateStackTrace(t *testing.T, stackTrace string) {
 	if stackTrace == "" {
 		t.Error("Stack trace should not be empty")
@@ -612,24 +622,25 @@ func validateStackTrace(t *testing.T, stackTrace string) {
 	if !strings.Contains(lines[0], "TestWrap") && !strings.Contains(lines[0], "TestNew") {
 		t.Errorf("Stack trace should contain a caller (TestWrap or TestNew) at the first stack frame, got: %s", lines[0])
 	}
-
 }
 
-// min returns the minimum of two integers
+// min returns the minimum of two integers.
 func min(a, b int) int {
 	if a < b {
 		return a
 	}
+
 	return b
 }
 
 // containsAttr checks if an attribute exists in the want list
-// by comparing both key and value
+// by comparing both key and value.
 func containsAttr(want []slog.Attr, attr slog.Attr) bool {
 	for _, e := range want {
 		if e.Key == attr.Key && e.Value.String() == attr.Value.String() {
 			return true
 		}
 	}
+
 	return false
 }

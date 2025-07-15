@@ -25,52 +25,52 @@ type AppErr struct {
 // Global error variables provide predefined AppErr instances for common gRPC status codes.
 // These can be used directly or as targets for errors.Is comparisons.
 var (
-	// ErrCanceled represents a canceled operation
+	// ErrCanceled represents a canceled operation.
 	ErrCanceled = &AppErr{Code: codes.Canceled}
 
-	// ErrUnknown represents an unknown error
+	// ErrUnknown represents an unknown error.
 	ErrUnknown = &AppErr{Code: codes.Unknown}
 
-	// ErrInvalidArgument represents an invalid argument error
+	// ErrInvalidArgument represents an invalid argument error.
 	ErrInvalidArgument = &AppErr{Code: codes.InvalidArgument}
 
-	// ErrDeadlineExceeded represents a deadline exceeded error
+	// ErrDeadlineExceeded represents a deadline exceeded error.
 	ErrDeadlineExceeded = &AppErr{Code: codes.DeadlineExceeded}
 
-	// ErrNotFound represents a not found error
+	// ErrNotFound represents a not found error.
 	ErrNotFound = &AppErr{Code: codes.NotFound}
 
-	// ErrAlreadyExists represents an already exists error
+	// ErrAlreadyExists represents an already exists error.
 	ErrAlreadyExists = &AppErr{Code: codes.AlreadyExists}
 
-	// ErrPermissionDenied represents a permission denied error
+	// ErrPermissionDenied represents a permission denied error.
 	ErrPermissionDenied = &AppErr{Code: codes.PermissionDenied}
 
-	// ErrResourceExhausted represents a resource exhausted error
+	// ErrResourceExhausted represents a resource exhausted error.
 	ErrResourceExhausted = &AppErr{Code: codes.ResourceExhausted}
 
-	// ErrFailedPrecondition represents a failed precondition error
+	// ErrFailedPrecondition represents a failed precondition error.
 	ErrFailedPrecondition = &AppErr{Code: codes.FailedPrecondition}
 
-	// ErrAborted represents an aborted operation error
+	// ErrAborted represents an aborted operation error.
 	ErrAborted = &AppErr{Code: codes.Aborted}
 
-	// ErrOutOfRange represents an out of range error
+	// ErrOutOfRange represents an out of range error.
 	ErrOutOfRange = &AppErr{Code: codes.OutOfRange}
 
-	// ErrUnimplemented represents an unimplemented operation error
+	// ErrUnimplemented represents an unimplemented operation error.
 	ErrUnimplemented = &AppErr{Code: codes.Unimplemented}
 
-	// ErrInternal represents an internal server error
+	// ErrInternal represents an internal server error.
 	ErrInternal = &AppErr{Code: codes.Internal}
 
-	// ErrUnavailable represents a service unavailable error
+	// ErrUnavailable represents a service unavailable error.
 	ErrUnavailable = &AppErr{Code: codes.Unavailable}
 
-	// ErrDataLoss represents a data loss error
+	// ErrDataLoss represents a data loss error.
 	ErrDataLoss = &AppErr{Code: codes.DataLoss}
 
-	// ErrUnauthenticated represents an unauthenticated request error
+	// ErrUnauthenticated represents an unauthenticated request error.
 	ErrUnauthenticated = &AppErr{Code: codes.Unauthenticated}
 )
 
@@ -93,10 +93,12 @@ func (e *AppErr) Is(target error) bool {
 	if target == nil {
 		return false
 	}
+
 	if t, ok := target.(*AppErr); ok {
 		// Compare by Code for semantic equivalence
 		return e.Code == t.Code
 	}
+
 	return errors.Is(e.Cause, target)
 }
 
@@ -128,6 +130,7 @@ func (e *AppErr) LogValue() slog.Value {
 // Use this when there is no underlying error to wrap.
 func New(code codes.Code, msg string, attrs ...slog.Attr) error {
 	attrs = append(attrs, withStack())
+
 	return &AppErr{
 		Code:  code,
 		Msg:   fmt.Sprintf("%s (%s)", msg, code),
@@ -183,23 +186,26 @@ func Wrap(err error, code codes.Code, msg string, attrs ...slog.Attr) error {
 	}
 }
 
+const callStackSkip = 3
+
 // withStack captures the current stack trace and returns it as a slog attribute.
 // This is used internally by New and Wrap to automatically include stack traces.
 func withStack() slog.Attr {
 	var pcs [32]uintptr
-	n := runtime.Callers(3, pcs[:]) // Skip withStack and New/Wrap
+
+	n := runtime.Callers(callStackSkip, pcs[:]) // Skip withStack and New/Wrap
 	if n == 0 {
 		return slog.String("stacktrace", "unknown")
 	}
 
 	var sb strings.Builder
-	var lines []string
-	lines = append(lines, "goroutine 1 [running]:") // Mock goroutine header
 
 	frames := runtime.CallersFrames(pcs[:n])
+
 	for {
 		frame, more := frames.Next()
 		sb.WriteString(fmt.Sprintf("%s\n\t%s:%d\n", frame.Function, frame.File, frame.Line))
+
 		if !more {
 			break
 		}

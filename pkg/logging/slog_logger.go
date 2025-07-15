@@ -28,6 +28,7 @@ func New(opts ...Option) *Logger {
 	}
 
 	var handler slog.Handler
+
 	switch o.format {
 	case FormatText:
 		handler = slog.NewTextHandler(o.writer, handlerOpts)
@@ -76,6 +77,7 @@ func (l *Logger) With(args ...slog.Attr) *Logger {
 	for i, v := range args {
 		slogArgs[i] = v
 	}
+
 	return &Logger{
 		logger: l.logger.With(slogArgs...),
 	}
@@ -96,6 +98,7 @@ func (l *Logger) log(ctx context.Context, level slog.Level, msg string, args ...
 // fromContext extracts trace and span IDs from context using OpenTelemetry.
 func fromContext(ctx context.Context) []slog.Attr {
 	var attrs []slog.Attr
+
 	spanContext := trace.SpanFromContext(ctx).SpanContext()
 
 	if !spanContext.IsValid() {

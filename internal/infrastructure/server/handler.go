@@ -30,7 +30,9 @@ func (h *HTTPHandler) RegisterRoutes(mux *http.ServeMux) {
 func (h *HTTPHandler) handleHome(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
+
 		return
 	}
+
 	fmt.Fprintf(w, "Welcome to Go Backend Scaffold!")
 }

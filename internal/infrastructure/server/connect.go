@@ -58,6 +58,7 @@ func NewConnectServer(
 // Start starts the Connect server.
 func (s *ConnectServer) Start() error {
 	s.logger.Info(context.Background(), fmt.Sprintf("Connect Server starting on %s", s.address))
+
 	return s.server.ListenAndServe()
 }
 
@@ -65,6 +66,7 @@ func (s *ConnectServer) Start() error {
 func (s *ConnectServer) Stop() error {
 	if s.server != nil {
 		timeout := s.Cfg.Server.ShutdownTimeout
+
 		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 		defer cancel()
 

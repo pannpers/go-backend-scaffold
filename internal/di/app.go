@@ -29,5 +29,6 @@ func (a *App) Shutdown(ctx context.Context) error {
 	}
 
 	log.Println("Application shutdown complete")
+
 	return nil
 }

@@ -117,6 +117,7 @@ func TestLoad(t *testing.T) {
 			for key, value := range tt.envVars {
 				os.Setenv(key, value)
 			}
+
 			defer func() {
 				// Clean up environment variables
 				for key := range tt.envVars {
@@ -128,6 +129,7 @@ func TestLoad(t *testing.T) {
 			if tt.wantErr != nil {
 				assert.Error(t, err)
 				assert.ErrorAs(t, err, &tt.wantErr)
+
 				return
 			}
 

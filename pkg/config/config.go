@@ -125,7 +125,7 @@ func LoadFromFile(prefix, filepath string) (*Config, error) {
 }
 
 // loadEnvFile loads environment variables from a file.
-// Expected format: KEY=value (one per line)
+// Expected format: KEY=value (one per line).
 func loadEnvFile(filepath string) (map[string]string, error) {
 	content, err := os.ReadFile(filepath)
 	if err != nil {
@@ -172,36 +172,45 @@ func (c *Config) Validate() error {
 
 	validEnvironments := []string{"development", "staging", "production"}
 	valid := false
+
 	for _, env := range validEnvironments {
 		if c.Environment == env {
 			valid = true
+
 			break
 		}
 	}
+
 	if !valid {
 		return fmt.Errorf("invalid environment: %s", c.Environment)
 	}
 
 	validLogLevels := []string{"debug", "info", "warn", "error"}
 	valid = false
+
 	for _, level := range validLogLevels {
 		if c.Logging.Level == level {
 			valid = true
+
 			break
 		}
 	}
+
 	if !valid {
 		return fmt.Errorf("invalid log level: %s", c.Logging.Level)
 	}
 
 	validLogFormats := []string{"json", "text"}
 	valid = false
+
 	for _, format := range validLogFormats {
 		if c.Logging.Format == format {
 			valid = true
+
 			break
 		}
 	}
+
 	if !valid {
 		return fmt.Errorf("invalid log format: %s", c.Logging.Format)
 	}

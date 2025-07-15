@@ -19,10 +19,12 @@ func contextWithTrace(traceID, spanID string) context.Context {
 	if err != nil {
 		panic(fmt.Sprintf("invalid traceIDStr for test: %s, error: %v", traceID, err))
 	}
+
 	sid, err := trace.SpanIDFromHex(spanID)
 	if err != nil {
 		panic(fmt.Sprintf("invalid spanIDStr for test: %s, error: %v", spanID, err))
 	}
+
 	spanCtx := trace.NewSpanContext(trace.SpanContextConfig{
 		TraceID:    tid,
 		SpanID:     sid,
@@ -45,12 +47,14 @@ func normalizeOutput(output string) string {
 
 func TestLogger_LevelMethods(t *testing.T) {
 	t.Parallel()
+
 	type args struct {
 		ctx   context.Context
 		msg   string
 		err   error // Add error field for Error method
 		attrs []slog.Attr
 	}
+
 	tests := []struct {
 		name         string
 		opts         []logging.Option                                                                        // Options for Logger.New
@@ -188,12 +192,14 @@ func TestLogger_LevelMethods(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var buf bytes.Buffer
+
 			opts := tc.opts
 			// Ensure buffer is used for output by adding WithWriter to the logger options.
 			opts = append(opts, logging.WithWriter(&buf), logging.WithReplaceAttr(func(_ []string, a slog.Attr) slog.Attr {
 				if a.Key == slog.TimeKey {
 					return slog.Attr{} // Discard time attribute for test stability
 				}
+
 				return a
 			}))
 

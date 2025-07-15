@@ -28,6 +28,7 @@ func main() {
 
 	// Start server in a goroutine
 	errChan := make(chan error, 1)
+
 	go func() {
 		if err := app.Server.Start(); err != nil {
 			errChan <- err

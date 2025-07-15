@@ -61,9 +61,11 @@ func New(cfg *config.Config, logger *logging.Logger) (*Database, error) {
 	return database, nil
 }
 
+const pingTimeout = 5 * time.Second
+
 // Ping verifies the database connection.
 func (d *Database) Ping() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), pingTimeout)
 	defer cancel()
 
 	return d.db.PingContext(ctx)
@@ -73,8 +75,10 @@ func (d *Database) Ping() error {
 func (d *Database) Close() error {
 	if d.db != nil {
 		d.logger.Info(context.Background(), "Closing database connection")
+
 		return d.db.Close()
 	}
+
 	return nil
 }
 

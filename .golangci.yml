@@ -1,0 +1,63 @@
+version: '2'
+
+run:
+  timeout: 3m
+  go: '1.24'
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    # Default linters (always enabled)
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+
+    # Additional recommended linters
+    - revive
+    - gosec
+    - misspell
+    - unconvert
+    - gocyclo
+    - dupl
+    - goconst
+    - unparam
+    - nakedret
+    - prealloc
+    - copyloopvar
+    - gocritic
+    - nolintlint
+    - whitespace
+    - wsl
+    - godot
+    - godox
+    - goheader
+    - mnd
+    - gomodguard
+    - goprintffuncname
+    - importas
+    - makezero
+    - nilerr
+    - nlreturn
+    - noctx
+    - rowserrcheck
+    - sqlclosecheck
+    - tparallel
+    - wastedassign
+
+  disable:
+    - exhaustive
+    - exhaustruct
+    - forbidigo
+    - funlen
+    - gocognit
+    - err113
+    - lll
+    - paralleltest
+    - tagliatelle
+    - testpackage
+    - varnamelen
+    - wrapcheck
+
+
