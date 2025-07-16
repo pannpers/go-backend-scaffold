@@ -1,3 +1,67 @@
+// Package apperr provides structured error handling with status code compatibility.
+// It enables consistent error management across gRPC/Connect-RPC services with automatic
+// stack trace capture, structured logging integration, and semantic error comparison.
+//
+// # Overview
+//
+// AppErr is the main error type that wraps errors with additional context including:
+//   - Status codes from pkg/apperr/codes for API compatibility
+//   - Structured logging attributes
+//   - Automatic stack trace capture
+//   - Error chain unwrapping support
+//
+// # Basic Usage
+//
+// Create new errors with status codes:
+//
+//	// Create a new error
+//	err := apperr.New(codes.InvalidArgument, "user ID cannot be empty")
+//
+//	// Wrap an existing error
+//	err = apperr.Wrap(dbErr, codes.Internal, "failed to get user",
+//		slog.String("user_id", userID))
+//
+// # Error Comparison
+//
+// Use predefined error variables for semantic comparison:
+//
+//	if errors.Is(err, apperr.ErrNotFound) {
+//		// Handle not found error
+//	}
+//
+//	if errors.Is(err, apperr.ErrInvalidArgument) {
+//		// Handle invalid argument error
+//	}
+//
+// # Structured Logging
+//
+// AppErr implements slog.LogValuer for structured logging:
+//
+//	logger.Error("operation failed", slog.Any("error", err))
+//	// Logs: {"msg": "operation failed", "error": {"msg": "...", "code": "...", "cause": "..."}}
+//
+// # Error Chain Unwrapping
+//
+// AppErr supports standard error unwrapping:
+//
+//	var appErr *apperr.AppErr
+//	if errors.As(err, &appErr) {
+//		fmt.Printf("Status code: %v\n", appErr.Code)
+//	}
+//
+//	// Unwrap to get the original cause
+//	originalErr := errors.Unwrap(err)
+//
+// # Predefined Error Variables
+//
+// The package provides predefined error variables for all status codes:
+//   - ErrCanceled, ErrUnknown, ErrInvalidArgument
+//   - ErrDeadlineExceeded, ErrNotFound, ErrAlreadyExists
+//   - ErrPermissionDenied, ErrResourceExhausted, ErrFailedPrecondition
+//   - ErrAborted, ErrOutOfRange, ErrUnimplemented
+//   - ErrInternal, ErrUnavailable, ErrDataLoss, ErrUnauthenticated
+//
+// These variables can be used directly or as targets for errors.Is comparisons.
 package apperr
 
 import (
@@ -7,22 +71,22 @@ import (
 	"runtime"
 	"strings"
 
-	"google.golang.org/grpc/codes"
+	"github.com/pannpers/go-backend-scaffold/pkg/apperr/codes"
 )
 
-// AppErr represents an application error with gRPC status code compatibility.
+// AppErr represents an application error with status code compatibility.
 // It provides structured error handling with automatic stack trace capture,
-// gRPC status code mapping, and structured logging support.
+// status code mapping, and structured logging support.
 // AppErr implements the error interface and can be used with the standard
 // errors package functions like errors.Is and errors.As.
 type AppErr struct {
 	Cause error       // Original error that caused this AppErr (if any)
-	Code  codes.Code  // gRPC status code representing the error type
+	Code  codes.Code  // Status code representing the error type
 	Msg   string      // Human-readable error message
 	Attrs []slog.Attr // Structured attributes for logging context
 }
 
-// Global error variables provide predefined AppErr instances for common gRPC status codes.
+// Global error variables provide predefined AppErr instances for common status codes.
 // These can be used directly or as targets for errors.Is comparisons.
 var (
 	// ErrCanceled represents a canceled operation.
@@ -75,7 +139,7 @@ var (
 )
 
 // Error implements the error interface.
-// Returns the formatted error message including the gRPC status code.
+// Returns the formatted error message including the status code.
 func (e *AppErr) Error() string {
 	return e.Msg
 }
@@ -125,9 +189,19 @@ func (e *AppErr) LogValue() slog.Value {
 }
 
 // New creates a new AppErr instance without a cause error.
-// The message is automatically formatted to include the gRPC status code.
+// The message is automatically formatted to include the status code.
 // A stack trace is automatically captured and included in the attributes.
 // Use this when there is no underlying error to wrap.
+//
+// Example:
+//
+//	err := apperr.New(codes.InvalidArgument, "user ID cannot be empty")
+//	// Returns: "user ID cannot be empty (InvalidArgument)"
+//
+//	// With structured logging attributes
+//	err = apperr.New(codes.NotFound, "user not found",
+//		slog.String("user_id", "123"),
+//		slog.String("operation", "GetUser"))
 func New(code codes.Code, msg string, attrs ...slog.Attr) error {
 	attrs = append(attrs, withStack())
 
@@ -138,12 +212,22 @@ func New(code codes.Code, msg string, attrs ...slog.Attr) error {
 	}
 }
 
-// Wrap wraps an existing error with additional context and gRPC status code.
+// Wrap wraps an existing error with additional context and status code.
 // If the error is already an AppErr, it will be flattened and the messages will be concatenated.
 //
 // Note: When wrapping an existing AppErr, its original Code field will be overridden by the given code.
 // A stack trace is automatically captured and included in the attributes.
-// Use this to wrap existing errors with additional context and gRPC status code.
+// Use this to wrap existing errors with additional context and status code.
+//
+// Example:
+//
+//	// Wrap a database error
+//	err := apperr.Wrap(dbErr, codes.Internal, "failed to get user",
+//		slog.String("user_id", userID))
+//
+//	// Wrap an existing AppErr (flattens the chain)
+//	err = apperr.Wrap(appErr, codes.NotFound, "user lookup failed")
+//	// Result: "user lookup failed (NotFound): original message"
 func Wrap(err error, code codes.Code, msg string, attrs ...slog.Attr) error {
 	attrs = append(attrs, withStack())
 
@@ -190,6 +274,7 @@ const callStackSkip = 3
 
 // withStack captures the current stack trace and returns it as a slog attribute.
 // This is used internally by New and Wrap to automatically include stack traces.
+// The stack trace excludes the withStack function itself and the immediate caller (New/Wrap).
 func withStack() slog.Attr {
 	var pcs [32]uintptr
 

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"google.golang.org/grpc/codes"
+	"github.com/pannpers/go-backend-scaffold/pkg/apperr/codes"
 )
 
 // Interface method tests - verify AppErr implements error interface correctly
@@ -22,18 +22,18 @@ func TestAppErr_Error(t *testing.T) {
 			name: "returns formatted message when no cause error",
 			appErr: &AppErr{
 				Code: codes.InvalidArgument,
-				Msg:  "invalid input (InvalidArgument)",
+				Msg:  "invalid input (invalid_argument)",
 			},
-			want: "invalid input (InvalidArgument)",
+			want: "invalid input (invalid_argument)",
 		},
 		{
 			name: "returns formatted message when cause error exists",
 			appErr: &AppErr{
 				Cause: errors.New("database error"),
 				Code:  codes.Internal,
-				Msg:   "failed to process request: database error (Internal)",
+				Msg:   "failed to process request: database error (internal)",
 			},
-			want: "failed to process request: database error (Internal)",
+			want: "failed to process request: database error (internal)",
 		},
 	}
 
@@ -216,7 +216,7 @@ func TestAppErr_LogValue(t *testing.T) {
 			},
 			want: map[string]string{
 				"msg":   "test error",
-				"code":  "Internal",
+				"code":  "internal",
 				"cause": "database error",
 			},
 			wantAttrs: map[string]string{
@@ -233,7 +233,7 @@ func TestAppErr_LogValue(t *testing.T) {
 			},
 			want: map[string]string{
 				"msg":  "test error",
-				"code": "InvalidArgument",
+				"code": "invalid_argument",
 			},
 			wantAttrs: map[string]string{
 				"user_id": "123",
@@ -249,7 +249,7 @@ func TestAppErr_LogValue(t *testing.T) {
 			},
 			want: map[string]string{
 				"msg":  "not found",
-				"code": "NotFound",
+				"code": "not_found",
 			},
 			wantAttrs: map[string]string{},
 		},
@@ -266,8 +266,8 @@ func TestAppErr_LogValue(t *testing.T) {
 			},
 			want: map[string]string{
 				"msg":   "wrapped error",
-				"code":  "Internal",
-				"cause": "invalid input (InvalidArgument)",
+				"code":  "internal",
+				"cause": "invalid input (invalid_argument)",
 			},
 			wantAttrs: map[string]string{
 				"user_id": "123",
@@ -284,7 +284,7 @@ func TestAppErr_LogValue(t *testing.T) {
 			},
 			want: map[string]string{
 				"msg":  "unknown error",
-				"code": "Unknown",
+				"code": "unknown",
 			},
 			wantAttrs: map[string]string{
 				"user_id": "123",
@@ -367,7 +367,7 @@ func TestNew(t *testing.T) {
 				err:      ErrInvalidArgument,
 				code:     codes.InvalidArgument,
 				attrs:    []slog.Attr{slog.String("field", "email"), slog.String("value", "invalid-email")},
-				errorStr: "invalid email format (InvalidArgument)",
+				errorStr: "invalid email format (invalid_argument)",
 			},
 		},
 		{
@@ -381,7 +381,7 @@ func TestNew(t *testing.T) {
 				err:      ErrInternal,
 				code:     codes.Internal,
 				attrs:    nil,
-				errorStr: "internal server error (Internal)",
+				errorStr: "internal server error (internal)",
 			},
 		},
 	}
@@ -471,7 +471,7 @@ func TestWrap(t *testing.T) {
 				cause:    sql.ErrNoRows,
 				code:     codes.NotFound,
 				attrs:    []slog.Attr{slog.String("user_id", "123"), slog.String("operation", "create_user")},
-				errorStr: "failed to create user: sql: no rows in result set (NotFound)",
+				errorStr: "failed to create user: sql: no rows in result set (not_found)",
 			},
 		},
 		{
@@ -487,7 +487,7 @@ func TestWrap(t *testing.T) {
 				cause:    sql.ErrTxDone,
 				code:     codes.FailedPrecondition,
 				attrs:    nil,
-				errorStr: "invalid input: sql: transaction has already been committed or rolled back (FailedPrecondition)",
+				errorStr: "invalid input: sql: transaction has already been committed or rolled back (failed_precondition)",
 			},
 		},
 		{
@@ -503,7 +503,7 @@ func TestWrap(t *testing.T) {
 				cause:    New(codes.InvalidArgument, "invalid email format", slog.String("field", "email")), // AppErr is used if cause is nil
 				code:     codes.Internal,
 				attrs:    []slog.Attr{slog.String("field", "email"), slog.String("user_id", "123"), slog.String("operation", "create_user")},
-				errorStr: "failed to create user (Internal): invalid email format (InvalidArgument)",
+				errorStr: "failed to create user (internal): invalid email format (invalid_argument)",
 			},
 		},
 		{
@@ -519,7 +519,7 @@ func TestWrap(t *testing.T) {
 				cause:    New(codes.NotFound, "user not found"), // AppErr is used if cause is nil
 				code:     codes.Internal,
 				attrs:    nil,
-				errorStr: "database operation failed (Internal): user not found (NotFound)",
+				errorStr: "database operation failed (internal): user not found (not_found)",
 			},
 		},
 		{
@@ -535,7 +535,7 @@ func TestWrap(t *testing.T) {
 				cause:    sql.ErrNoRows, // Original underlying error
 				code:     codes.Internal,
 				attrs:    []slog.Attr{slog.String("request_id", "abc123")},
-				errorStr: "failed to process request (Internal): invalid input: sql: no rows in result set (NotFound)",
+				errorStr: "failed to process request (internal): invalid input: sql: no rows in result set (not_found)",
 			},
 		},
 	}
@@ -622,15 +622,6 @@ func validateStackTrace(t *testing.T, stackTrace string) {
 	if !strings.Contains(lines[0], "TestWrap") && !strings.Contains(lines[0], "TestNew") {
 		t.Errorf("Stack trace should contain a caller (TestWrap or TestNew) at the first stack frame, got: %s", lines[0])
 	}
-}
-
-// min returns the minimum of two integers.
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-
-	return b
 }
 
 // containsAttr checks if an attribute exists in the want list
