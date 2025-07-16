@@ -39,11 +39,15 @@ func main() {
 	select {
 	case <-ctx.Done():
 		log.Println("Received shutdown signal, stopping server gracefully...")
-		app.Shutdown(context.Background())
+		if err := app.Shutdown(context.Background()); err != nil {
+			log.Printf("error during shutdown: %v", err)
+		}
 
 	case err := <-errChan:
 		log.Printf("Server failed to start: %v", err)
-		app.Shutdown(context.Background())
+		if err := app.Shutdown(context.Background()); err != nil {
+			log.Printf("error during shutdown: %v", err)
+		}
 		os.Exit(1)
 	}
 
