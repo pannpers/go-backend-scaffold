@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/bufbuild/connect-go"
+	"connectrpc.com/connect"
 	"github.com/pannpers/go-backend-scaffold/internal/adapter/connect/mapper"
 	"github.com/pannpers/go-backend-scaffold/internal/usecase"
 	"github.com/pannpers/go-backend-scaffold/pkg/logging"
@@ -25,6 +25,8 @@ func NewUserHandler(userUseCase *usecase.UserUseCase, logger *logging.Logger) *U
 	}
 }
 
+
+
 // GetUser retrieves a user by ID.
 func (h *UserHandler) GetUser(ctx context.Context, req *connect.Request[api.GetUserRequest]) (*connect.Response[api.GetUserResponse], error) {
 	if req == nil || req.Msg == nil {
@@ -38,7 +40,7 @@ func (h *UserHandler) GetUser(ctx context.Context, req *connect.Request[api.GetU
 	// Use the use case layer for business logic
 	user, err := h.userUseCase.GetUser(ctx, req.Msg.UserId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, err
 	}
 
 	return connect.NewResponse(&api.GetUserResponse{
@@ -62,7 +64,7 @@ func (h *UserHandler) CreateUser(ctx context.Context, req *connect.Request[api.C
 	// Use the use case layer for business logic
 	createdUser, err := h.userUseCase.CreateUser(ctx, newUser)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, err
 	}
 
 	return connect.NewResponse(&api.CreateUserResponse{

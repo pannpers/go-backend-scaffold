@@ -8,9 +8,11 @@ import (
 
 	"log/slog"
 
+	"connectrpc.com/connect"
 	"connectrpc.com/grpchealth"
-	"github.com/pannpers/go-backend-scaffold/internal/adapter/connect"
+	connecthandler "github.com/pannpers/go-backend-scaffold/internal/adapter/connect"
 	"github.com/pannpers/go-backend-scaffold/internal/infrastructure/database/rdb"
+	"github.com/pannpers/go-backend-scaffold/pkg/apperr"
 	"github.com/pannpers/go-backend-scaffold/pkg/config"
 	"github.com/pannpers/go-backend-scaffold/pkg/logging"
 	"github.com/pannpers/protobuf-scaffold/gen/go/proto/api/v1/v1connect"
@@ -24,7 +26,6 @@ type ConnectServer struct {
 	address string
 }
 
-
 // NewConnectServer creates a new Connect server instance.
 func NewConnectServer(
 	cfg *config.Config,
@@ -35,15 +36,18 @@ func NewConnectServer(
 ) *ConnectServer {
 	mux := http.NewServeMux()
 
-	// Register Connect handlers.
-	path, handler := v1connect.NewUserServiceHandler(userHandler)
+	// Create error handling interceptor
+	errorInterceptor := apperr.NewInterceptor(logger)
+
+	// Register Connect handlers with interceptor.
+	path, handler := v1connect.NewUserServiceHandler(userHandler, connect.WithInterceptors(errorInterceptor))
 	mux.Handle(path, handler)
 
-	path, handler = v1connect.NewPostServiceHandler(postHandler)
+	path, handler = v1connect.NewPostServiceHandler(postHandler, connect.WithInterceptors(errorInterceptor))
 	mux.Handle(path, handler)
 
 	// Register health check handler.
-	healthChecker := connect.NewHealthCheckHandler(db, logger)
+	healthChecker := connecthandler.NewHealthCheckHandler(db, logger)
 	mux.Handle(grpchealth.NewHandler(healthChecker))
 
 	address := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)

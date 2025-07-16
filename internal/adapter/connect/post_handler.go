@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/bufbuild/connect-go"
+	"connectrpc.com/connect"
 	"github.com/pannpers/go-backend-scaffold/internal/adapter/connect/mapper"
 	"github.com/pannpers/go-backend-scaffold/internal/usecase"
 	"github.com/pannpers/go-backend-scaffold/pkg/logging"
@@ -25,6 +25,8 @@ func NewPostHandler(postUseCase *usecase.PostUseCase, logger *logging.Logger) *P
 	}
 }
 
+
+
 // GetPost retrieves a post by ID.
 func (h *PostHandler) GetPost(ctx context.Context, req *connect.Request[api.GetPostRequest]) (*connect.Response[api.GetPostResponse], error) {
 	if req == nil || req.Msg == nil {
@@ -38,7 +40,7 @@ func (h *PostHandler) GetPost(ctx context.Context, req *connect.Request[api.GetP
 	// Use the use case layer for business logic
 	post, err := h.postUseCase.GetPost(ctx, req.Msg.PostId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, err
 	}
 
 	return connect.NewResponse(&api.GetPostResponse{
@@ -65,7 +67,7 @@ func (h *PostHandler) CreatePost(ctx context.Context, req *connect.Request[api.C
 	// Use the use case layer for business logic
 	createdPost, err := h.postUseCase.CreatePost(ctx, newPost)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, err
 	}
 
 	return connect.NewResponse(&api.CreatePostResponse{
