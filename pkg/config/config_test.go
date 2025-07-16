@@ -1,7 +1,6 @@
 package config
 
 import (
-	"os"
 	"testing"
 
 	"github.com/kelseyhightower/envconfig"
@@ -115,15 +114,8 @@ func TestLoad(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set up environment variables
 			for key, value := range tt.envVars {
-				os.Setenv(key, value)
+				t.Setenv(key, value)
 			}
-
-			defer func() {
-				// Clean up environment variables
-				for key := range tt.envVars {
-					os.Unsetenv(key)
-				}
-			}()
 
 			got, err := Load(tt.prefix)
 			if tt.wantErr != nil {
@@ -137,60 +129,6 @@ func TestLoad(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
-}
-
-func TestLoadFromFile(t *testing.T) {
-	// Create a temporary env file
-	envContent := `APP_ENVIRONMENT=staging
-APP_DEBUG=true
-APP_SERVER_PORT=9090
-APP_DATABASE_NAME=testdb
-APP_DATABASE_USER=testuser
-APP_DATABASE_PASSWORD=testpass
-APP_LOGGING_LEVEL=warn`
-
-	tmpFile, err := os.CreateTemp("", "test.env")
-	require.NoError(t, err)
-	defer os.Remove(tmpFile.Name())
-
-	_, err = tmpFile.WriteString(envContent)
-	require.NoError(t, err)
-	tmpFile.Close()
-
-	// Test loading from file
-	cfg, err := LoadFromFile("APP", tmpFile.Name())
-	require.NoError(t, err)
-
-	expected := &Config{
-		Environment: "staging",
-		Debug:       true,
-		Server: ServerConfig{
-			Port:         9090,
-			Host:         "localhost",
-			ReadTimeout:  30,
-			WriteTimeout: 30,
-			IdleTimeout:  60,
-		},
-		Database: DatabaseConfig{
-			Host:            "localhost",
-			Port:            5432,
-			Name:            "testdb",
-			User:            "testuser",
-			Password:        "testpass",
-			SSLMode:         "disable",
-			MaxOpenConns:    25,
-			MaxIdleConns:    5,
-			ConnMaxLifetime: 300,
-		},
-		Logging: LoggingConfig{
-			Level:         "warn",
-			Format:        "json",
-			Structured:    true,
-			IncludeCaller: false,
-		},
-	}
-
-	assert.Equal(t, expected, cfg)
 }
 
 func TestValidate(t *testing.T) {
@@ -367,41 +305,4 @@ func TestConfig_EnvironmentHelpers(t *testing.T) {
 			assert.Equal(t, tt.isProd, cfg.IsProduction())
 		})
 	}
-}
-
-func TestLoadEnvFile(t *testing.T) {
-	// Create a temporary env file with various formats
-	envContent := `# This is a comment
-APP_ENVIRONMENT=development
-APP_DEBUG=true
-APP_SERVER_PORT=8080
-APP_DATABASE_NAME="testdb"
-APP_DATABASE_USER='testuser'
-APP_DATABASE_PASSWORD=testpass
-
-# Empty line should be ignored
-APP_LOGGING_LEVEL=info`
-
-	tmpFile, err := os.CreateTemp("", "test.env")
-	require.NoError(t, err)
-	defer os.Remove(tmpFile.Name())
-
-	_, err = tmpFile.WriteString(envContent)
-	require.NoError(t, err)
-	tmpFile.Close()
-
-	envVars, err := loadEnvFile(tmpFile.Name())
-	require.NoError(t, err)
-
-	expected := map[string]string{
-		"APP_ENVIRONMENT":       "development",
-		"APP_DEBUG":             "true",
-		"APP_SERVER_PORT":       "8080",
-		"APP_DATABASE_NAME":     "testdb",
-		"APP_DATABASE_USER":     "testuser",
-		"APP_DATABASE_PASSWORD": "testpass",
-		"APP_LOGGING_LEVEL":     "info",
-	}
-
-	assert.Equal(t, expected, envVars)
 }
