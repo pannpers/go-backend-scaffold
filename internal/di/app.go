@@ -2,6 +2,8 @@ package di
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"log"
 
@@ -16,16 +18,22 @@ type App struct {
 func (a *App) Shutdown(ctx context.Context) error {
 	log.Println("Starting application shutdown...")
 
+	var errs error
+
 	// First, stop the server gracefully
 	if err := a.Server.Stop(); err != nil {
-		log.Printf("Error during server graceful shutdown: %v", err)
+		errs = errors.Join(errs, fmt.Errorf("failed to graceful shutdown server: %w", err))
 	}
 
 	// Then close all other resources
 	for _, closer := range a.Closers {
 		if err := closer.Close(); err != nil {
-			log.Printf("Error closing resource: %v", err)
+			errs = errors.Join(errs, fmt.Errorf("failed to close system resource: %w", err))
 		}
+	}
+
+	if errs != nil {
+		return errs
 	}
 
 	log.Println("Application shutdown complete")

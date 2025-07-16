@@ -7,13 +7,17 @@
 package di
 
 import (
+	"context"
 	"github.com/pannpers/go-backend-scaffold/internal/adapter/connect"
+	"github.com/pannpers/go-backend-scaffold/internal/entity"
 	"github.com/pannpers/go-backend-scaffold/internal/infrastructure/database/rdb"
 	"github.com/pannpers/go-backend-scaffold/internal/infrastructure/server"
+	"github.com/pannpers/go-backend-scaffold/internal/usecase"
 	"github.com/pannpers/go-backend-scaffold/pkg/config"
 	"github.com/pannpers/go-backend-scaffold/pkg/logging"
 	"io"
 	"log/slog"
+	"time"
 )
 
 // Injectors from wire.go:
@@ -29,8 +33,12 @@ func InitializeApp() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	userHandler := connect.NewUserHandler(logger)
-	postHandler := connect.NewPostHandler(logger)
+	userRepository := provideMockUserRepository()
+	userUseCase := usecase.NewUserUseCase(userRepository, logger)
+	userHandler := connect.NewUserHandler(userUseCase, logger)
+	postRepository := provideMockPostRepository()
+	postUseCase := usecase.NewPostUseCase(postRepository, logger)
+	postHandler := connect.NewPostHandler(postUseCase, logger)
 	connectServer := server.NewConnectServer(config, logger, database, userHandler, postHandler)
 	app := newApp(connectServer, database)
 	return app, nil
@@ -78,4 +86,70 @@ func provideLogger(cfg *config.Config) *logging.Logger {
 // provideDatabase creates a new database instance.
 func provideDatabase(cfg *config.Config, logger *logging.Logger) (*rdb.Database, error) {
 	return rdb.New(cfg, logger)
+}
+
+// MockUserRepository is a simple mock implementation for development
+type MockUserRepository struct{}
+
+func (m *MockUserRepository) Create(ctx context.Context, params *entity.NewUser) (*entity.User, error) {
+	return &entity.User{
+		ID:        "mock-user-id",
+		Name:      params.Name,
+		Email:     params.Email,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}, nil
+}
+
+func (m *MockUserRepository) Get(ctx context.Context, id string) (*entity.User, error) {
+	return &entity.User{
+		ID:        id,
+		Name:      "Mock User",
+		Email:     "mock@example.com",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}, nil
+}
+
+func (m *MockUserRepository) Delete(ctx context.Context, id string) error {
+	return nil
+}
+
+// MockPostRepository is a simple mock implementation for development
+type MockPostRepository struct{}
+
+func (m *MockPostRepository) Create(ctx context.Context, params *entity.NewPost) (*entity.Post, error) {
+	return &entity.Post{
+		ID:        "mock-post-id",
+		Title:     params.Title,
+		UserID:    params.UserID,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}, nil
+}
+
+func (m *MockPostRepository) Get(ctx context.Context, id string) (*entity.Post, error) {
+	return &entity.Post{
+		ID:        id,
+		Title:     "Mock Post",
+		UserID:    "mock-user-id",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}, nil
+}
+
+func (m *MockPostRepository) Delete(ctx context.Context, id string) error {
+	return nil
+}
+
+// provideMockUserRepository creates a mock user repository implementation.
+// TODO: Replace with actual database implementation
+func provideMockUserRepository() entity.UserRepository {
+	return &MockUserRepository{}
+}
+
+// provideMockPostRepository creates a mock post repository implementation.
+// TODO: Replace with actual database implementation
+func provideMockPostRepository() entity.PostRepository {
+	return &MockPostRepository{}
 }
