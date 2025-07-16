@@ -25,13 +25,13 @@ func InitializeApp() (*App, error) {
 		return nil, err
 	}
 	logger := provideLogger(config)
-	userHandler := connect.NewUserHandler(logger)
-	postHandler := connect.NewPostHandler(logger)
-	connectServer := server.NewConnectServer(config, logger, userHandler, postHandler)
 	database, err := provideDatabase(config, logger)
 	if err != nil {
 		return nil, err
 	}
+	userHandler := connect.NewUserHandler(logger)
+	postHandler := connect.NewPostHandler(logger)
+	connectServer := server.NewConnectServer(config, logger, database, userHandler, postHandler)
 	app := newApp(connectServer, database)
 	return app, nil
 }

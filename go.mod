@@ -34,6 +34,7 @@ require (
 	cel.dev/expr v0.24.0 // indirect
 	codeberg.org/chavacava/garif v0.2.0 // indirect
 	connectrpc.com/connect v1.18.1 // indirect
+	connectrpc.com/grpchealth v1.4.0 // indirect
 	connectrpc.com/otelconnect v0.7.2 // indirect
 	github.com/4meepo/tagalign v1.4.2 // indirect
 	github.com/Abirdcfly/dupword v0.1.6 // indirect

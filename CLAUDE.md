@@ -45,6 +45,11 @@ buf curl --schema ../protobuf-scaffold --protocol connect \
 buf curl --schema ../protobuf-scaffold --protocol connect \
   -d '{"user": {"id": {"value": "test123"}, "name": {"value": "John Doe"}, "email": {"value": "john@example.com"}}}' \
   http://localhost:9090/api.UserService/CreateUser
+
+# Test Health Check endpoint
+buf curl --schema buf.build/grpc/health --protocol connect \
+  -d '{"service": ""}' \
+  http://localhost:9090/grpc.health.v1.Health/Check
 ```
 
 ## Architecture
@@ -64,6 +69,7 @@ buf curl --schema ../protobuf-scaffold --protocol connect \
 - **Protobuf**: Uses `github.com/pannpers/protobuf-scaffold` for shared definitions
 - **Database**: Bun ORM with PostgreSQL support via `github.com/uptrace/bun`
 - **Logging**: Custom structured logging with OpenTelemetry integration
+- **Health Checks**: `connectrpc.com/grpchealth` for gRPC-compatible health monitoring
 
 ### Configuration Management
 The project uses environment variables for configuration with prefix support:
@@ -93,9 +99,18 @@ The project uses environment variables for configuration with prefix support:
 
 ### Connect-RPC Handlers
 Handlers are in `internal/adapter/connect/` and implement the generated service interfaces:
-- Service paths: `/api.UserService/` and `/api.PostService/` 
+- **User Service**: `user_handler.go` - User management endpoints (`/api.UserService/`)
+- **Post Service**: `post_handler.go` - Post management endpoints (`/api.PostService/`)
+- **Health Check**: `health_handler.go` - Database connectivity health checks (`/grpc.health.v1.Health/`)
 - Use Connect protocol, not plain gRPC
 - Handlers are bound to interfaces via Wire in `internal/di/wire.go`
+
+### Health Monitoring
+- gRPC-compatible health check endpoint at `/grpc.health.v1.Health/Check`
+- Verifies database connectivity by pinging the PostgreSQL connection
+- Returns `SERVING` when healthy, `NOT_SERVING` when database is unreachable
+- Compatible with Kubernetes liveness/readiness probes and load balancers
+- Structured logging of health check results with service context
 
 ### Database Integration
 - Uses Bun ORM with PostgreSQL driver
