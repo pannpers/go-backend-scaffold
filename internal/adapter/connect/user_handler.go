@@ -5,24 +5,23 @@ import (
 	"errors"
 
 	"github.com/bufbuild/connect-go"
+	"github.com/pannpers/go-backend-scaffold/internal/adapter/connect/mapper"
+	"github.com/pannpers/go-backend-scaffold/internal/usecase"
 	"github.com/pannpers/go-backend-scaffold/pkg/logging"
 	api "github.com/pannpers/protobuf-scaffold/gen/go/proto/api/v1"
-	entity "github.com/pannpers/protobuf-scaffold/gen/go/proto/entity/v1"
 )
 
 // UserHandler implements the UserService Connect interface.
 type UserHandler struct {
-	logger *logging.Logger
-	// Add your use case dependencies here.
-	// For example:
-	// userUseCase usecase.UserUseCase.
+	userUseCase *usecase.UserUseCase
+	logger      *logging.Logger
 }
 
 // NewUserHandler creates a new user handler.
-func NewUserHandler(logger *logging.Logger) *UserHandler {
+func NewUserHandler(userUseCase *usecase.UserUseCase, logger *logging.Logger) *UserHandler {
 	return &UserHandler{
-		logger: logger,
-		// Initialize your dependencies here.
+		userUseCase: userUseCase,
+		logger:      logger,
 	}
 }
 
@@ -36,22 +35,14 @@ func (h *UserHandler) GetUser(ctx context.Context, req *connect.Request[api.GetU
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("user_id is required"))
 	}
 
-	// TODO: Implement actual business logic using use case layer.
-	// For now, return a mock user.
-	user := &entity.User{
-		Id: &entity.UserId{
-			Value: req.Msg.UserId,
-		},
-		Name: &entity.UserName{
-			Value: "Example User",
-		},
-		Email: &entity.UserEmail{
-			Value: "example@example.com",
-		},
+	// Use the use case layer for business logic
+	user, err := h.userUseCase.GetUser(ctx, req.Msg.UserId)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	return connect.NewResponse(&api.GetUserResponse{
-		User: user,
+		User: mapper.UserToProto(user),
 	}), nil
 }
 
@@ -65,17 +56,16 @@ func (h *UserHandler) CreateUser(ctx context.Context, req *connect.Request[api.C
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("user is required"))
 	}
 
-	// TODO: Implement actual business logic using use case layer.
-	// For now, return the same user with a generated ID.
-	createdUser := &entity.User{
-		Id: &entity.UserId{
-			Value: "generated-user-id-" + req.Msg.User.GetId().GetValue(),
-		},
-		Name:  req.Msg.User.Name,
-		Email: req.Msg.User.Email,
+	// Convert protobuf to domain DTO
+	newUser := mapper.NewUserFromProto(req.Msg.User)
+
+	// Use the use case layer for business logic
+	createdUser, err := h.userUseCase.CreateUser(ctx, newUser)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	return connect.NewResponse(&api.CreateUserResponse{
-		User: createdUser,
+		User: mapper.UserToProto(createdUser),
 	}), nil
 }

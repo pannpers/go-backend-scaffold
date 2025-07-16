@@ -5,24 +5,23 @@ import (
 	"errors"
 
 	"github.com/bufbuild/connect-go"
+	"github.com/pannpers/go-backend-scaffold/internal/adapter/connect/mapper"
+	"github.com/pannpers/go-backend-scaffold/internal/usecase"
 	"github.com/pannpers/go-backend-scaffold/pkg/logging"
 	api "github.com/pannpers/protobuf-scaffold/gen/go/proto/api/v1"
-	entity "github.com/pannpers/protobuf-scaffold/gen/go/proto/entity/v1"
 )
 
 // PostHandler implements the PostService Connect interface.
 type PostHandler struct {
-	logger *logging.Logger
-	// Add your use case dependencies here.
-	// For example:
-	// postUseCase usecase.PostUseCase.
+	postUseCase *usecase.PostUseCase
+	logger      *logging.Logger
 }
 
 // NewPostHandler creates a new post handler.
-func NewPostHandler(logger *logging.Logger) *PostHandler {
+func NewPostHandler(postUseCase *usecase.PostUseCase, logger *logging.Logger) *PostHandler {
 	return &PostHandler{
-		logger: logger,
-		// Initialize your dependencies here.
+		postUseCase: postUseCase,
+		logger:      logger,
 	}
 }
 
@@ -36,19 +35,14 @@ func (h *PostHandler) GetPost(ctx context.Context, req *connect.Request[api.GetP
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("post_id is required"))
 	}
 
-	// TODO: Implement actual business logic using use case layer.
-	// For now, return a mock post.
-	post := &entity.Post{
-		Id: &entity.PostId{
-			Value: req.Msg.PostId,
-		},
-		Title: &entity.PostTitle{
-			Value: "Example Post Title",
-		},
+	// Use the use case layer for business logic
+	post, err := h.postUseCase.GetPost(ctx, req.Msg.PostId)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	return connect.NewResponse(&api.GetPostResponse{
-		Post: post,
+		Post: mapper.PostToProto(post),
 	}), nil
 }
 
@@ -62,16 +56,19 @@ func (h *PostHandler) CreatePost(ctx context.Context, req *connect.Request[api.C
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("post is required"))
 	}
 
-	// TODO: Implement actual business logic using use case layer.
-	// For now, return the same post with a generated ID.
-	createdPost := &entity.Post{
-		Id: &entity.PostId{
-			Value: "generated-post-id-" + req.Msg.Post.GetId().GetValue(),
-		},
-		Title: req.Msg.Post.Title,
+	// TODO: Extract user ID from context/authentication
+	userID := "default-user-id"
+
+	// Convert protobuf to domain DTO
+	newPost := mapper.NewPostFromProto(req.Msg.Post, userID)
+
+	// Use the use case layer for business logic
+	createdPost, err := h.postUseCase.CreatePost(ctx, newPost)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	return connect.NewResponse(&api.CreatePostResponse{
-		Post: createdPost,
+		Post: mapper.PostToProto(createdPost),
 	}), nil
 }
