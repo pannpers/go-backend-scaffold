@@ -36,14 +36,15 @@ func NewConnectServer(
 ) *ConnectServer {
 	mux := http.NewServeMux()
 
-	// Create error handling interceptor
+	// Create interceptors
+	accessLogInterceptor := logging.NewAccessLogInterceptor(logger)
 	errorInterceptor := apperr.NewInterceptor(logger)
 
-	// Register Connect handlers with interceptor.
-	path, handler := v1connect.NewUserServiceHandler(userHandler, connect.WithInterceptors(errorInterceptor))
+	// Register Connect handlers with interceptors.
+	path, handler := v1connect.NewUserServiceHandler(userHandler, connect.WithInterceptors(accessLogInterceptor, errorInterceptor))
 	mux.Handle(path, handler)
 
-	path, handler = v1connect.NewPostServiceHandler(postHandler, connect.WithInterceptors(errorInterceptor))
+	path, handler = v1connect.NewPostServiceHandler(postHandler, connect.WithInterceptors(accessLogInterceptor, errorInterceptor))
 	mux.Handle(path, handler)
 
 	// Register health check handler.
