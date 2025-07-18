@@ -40,11 +40,23 @@ func NewConnectServer(
 	accessLogInterceptor := logging.NewAccessLogInterceptor(logger)
 	errorInterceptor := apperr.NewInterceptor(logger)
 
-	// Register Connect handlers with interceptors.
-	path, handler := v1connect.NewUserServiceHandler(userHandler, connect.WithInterceptors(accessLogInterceptor, errorInterceptor))
+	// Create panic recovery handler
+	recoverHandler := connect.WithRecover(func(ctx context.Context, spec connect.Spec, header http.Header, p any) error {
+		logger.Error(ctx, "Panic recovered in Connect handler", fmt.Errorf("panic: %v", p),
+			slog.String("procedure", spec.Procedure),
+		)
+		return connect.NewError(connect.CodeInternal, fmt.Errorf("internal server error"))
+	})
+
+	// Register Connect handlers with interceptors and recover option.
+	path, handler := v1connect.NewUserServiceHandler(userHandler, 
+		recoverHandler,
+		connect.WithInterceptors(accessLogInterceptor, errorInterceptor))
 	mux.Handle(path, handler)
 
-	path, handler = v1connect.NewPostServiceHandler(postHandler, connect.WithInterceptors(accessLogInterceptor, errorInterceptor))
+	path, handler = v1connect.NewPostServiceHandler(postHandler, 
+		recoverHandler,
+		connect.WithInterceptors(accessLogInterceptor, errorInterceptor))
 	mux.Handle(path, handler)
 
 	// Register health check handler.
