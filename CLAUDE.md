@@ -61,14 +61,15 @@ buf curl --schema buf.build/grpc/health --protocol connect \
 - **internal/entity/**: Domain entities and business objects
 - **internal/infrastructure/**: Infrastructure concerns (servers, databases)
 - **internal/usecase/**: Business logic and use cases
-- **pkg/**: Reusable packages (config, logging, apperr)
+- **pkg/**: Reusable packages (config, logging, apperr, telemetry)
 
 ### Key Dependencies
-- **Connect-RPC**: `github.com/bufbuild/connect-go` for HTTP/gRPC-compatible APIs
+- **Connect-RPC**: `connectrpc.com/connect` for HTTP/gRPC-compatible APIs
 - **Wire**: `github.com/google/wire` for compile-time dependency injection  
 - **Protobuf**: Uses `github.com/pannpers/protobuf-scaffold` for shared definitions
 - **Database**: Bun ORM with PostgreSQL support via `github.com/uptrace/bun`
 - **Logging**: Custom structured logging with OpenTelemetry integration
+- **Tracing**: OpenTelemetry distributed tracing with `connectrpc.com/otelconnect`
 - **Health Checks**: `connectrpc.com/grpchealth` for gRPC-compatible health monitoring
 
 ### Configuration Management
@@ -98,12 +99,13 @@ The project uses environment variables for configuration with prefix support:
 ## Service Implementation
 
 ### Connect-RPC Handlers
-Handlers are in `internal/adapter/connect/` and implement the generated service interfaces:
+Handlers are in `internal/adapter/rpc/` and implement the generated service interfaces:
 - **User Service**: `user_handler.go` - User management endpoints (`/api.UserService/`)
 - **Post Service**: `post_handler.go` - Post management endpoints (`/api.PostService/`)
 - **Health Check**: `health_handler.go` - Database connectivity health checks (`/grpc.health.v1.Health/`)
 - Use Connect protocol, not plain gRPC
 - Handlers are bound to interfaces via Wire in `internal/di/wire.go`
+- **Interceptor chain**: Tracing → Access Logging → Error Handling
 
 ### Health Monitoring
 - gRPC-compatible health check endpoint at `/grpc.health.v1.Health/Check`
@@ -116,6 +118,42 @@ Handlers are in `internal/adapter/connect/` and implement the generated service 
 - Uses Bun ORM with PostgreSQL driver
 - Database configuration via environment variables (see config package)
 - Connection management handled in `internal/infrastructure/database/rdb/`
+
+### Distributed Tracing
+The project includes OpenTelemetry distributed tracing support:
+- **Automatic tracing**: All Connect-RPC requests are automatically traced
+- **Context propagation**: Trace context flows through the entire request lifecycle
+- **Configurable export**: Supports both local development and production modes
+- **OTLP support**: Compatible with Jaeger, Zipkin, and other OTLP-compatible backends
+
+#### Telemetry Configuration
+Environment variables for tracing configuration:
+- `APP_TELEMETRY_OTLP_ENDPOINT`: OTLP exporter endpoint (optional)
+- `APP_TELEMETRY_SERVICE_NAME`: Service name for traces (default: go-backend-scaffold)
+- `APP_TELEMETRY_SERVICE_VERSION`: Service version for traces (default: 1.0.0)
+
+#### Usage Examples
+```bash
+# Development mode (local tracing only, no export)
+go run cmd/api/main.go
+
+# Production mode with Jaeger
+APP_TELEMETRY_OTLP_ENDPOINT=http://jaeger:14268 \
+APP_TELEMETRY_SERVICE_NAME=my-service \
+APP_TELEMETRY_SERVICE_VERSION=1.0.0 \
+go run cmd/api/main.go
+
+# Production mode with OTLP collector
+APP_TELEMETRY_OTLP_ENDPOINT=http://otel-collector:4318 \
+APP_TELEMETRY_SERVICE_NAME=backend-api \
+go run cmd/api/main.go
+```
+
+#### Trace Features
+- **Span creation**: Each RPC request gets its own span with proper metadata
+- **Error tracking**: Failed requests are marked with error status and details
+- **Service topology**: Automatic service relationship mapping
+- **Performance monitoring**: Request duration and throughput metrics
 
 ## Development Notes
 
