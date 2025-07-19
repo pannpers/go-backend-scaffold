@@ -49,6 +49,11 @@
 //   - APP_LOGGING_STRUCTURED: Enable structured logging (default: true)
 //   - APP_LOGGING_INCLUDE_CALLER: Include caller information (default: false)
 //
+// Telemetry configuration:
+//   - APP_TELEMETRY_OTLP_ENDPOINT: OTLP exporter endpoint for sending traces
+//   - APP_TELEMETRY_SERVICE_NAME: Service name for tracing (default: go-backend-scaffold)
+//   - APP_TELEMETRY_SERVICE_VERSION: Service version for tracing (default: 1.0.0)
+//
 // # Environment Helpers
 //
 // Use environment detection helpers:
@@ -71,6 +76,7 @@ package config
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/kelseyhightower/envconfig"
 )
@@ -86,11 +92,17 @@ type Config struct {
 	// Logging configuration
 	Logging LoggingConfig `envconfig:"LOGGING"`
 
+	// Telemetry configuration
+	Telemetry TelemetryConfig `envconfig:"TELEMETRY"`
+
 	// Environment
 	Environment string `envconfig:"ENVIRONMENT" default:"development"`
 
 	// Debug mode
 	Debug bool `envconfig:"DEBUG" default:"false"`
+
+	// Shutdown timeout in seconds
+	ShutdownTimeout time.Duration `envconfig:"SHUTDOWN_TIMEOUT" default:"30s"`
 }
 
 // ServerConfig represents server-specific configuration.
@@ -101,17 +113,17 @@ type ServerConfig struct {
 	// Host to bind to
 	Host string `envconfig:"HOST" default:"localhost"`
 
-	// Read timeout in seconds
-	ReadTimeout int `envconfig:"READ_TIMEOUT" default:"30"`
+	// Read header timeout in milliseconds
+	ReadHeaderTimeout time.Duration `envconfig:"READ_HEADER_TIMEOUT" default:"500ms"`
 
-	// Write timeout in seconds
-	WriteTimeout int `envconfig:"WRITE_TIMEOUT" default:"30"`
+	// Read timeout in milliseconds
+	ReadTimeout time.Duration `envconfig:"READ_TIMEOUT" default:"1000ms"`
+
+	// Handler timeout in seconds
+	HandlerTimeout time.Duration `envconfig:"HANDLER_TIMEOUT" default:"5s"`
 
 	// Idle timeout in seconds
-	IdleTimeout int `envconfig:"IDLE_TIMEOUT" default:"60"`
-
-	// Shutdown timeout in seconds (for graceful shutdown)
-	ShutdownTimeout int `envconfig:"SHUTDOWN_TIMEOUT" default:"30"`
+	IdleTimeout time.Duration `envconfig:"IDLE_TIMEOUT" default:"3s"`
 }
 
 // DatabaseConfig represents database-specific configuration.
@@ -153,6 +165,18 @@ type LoggingConfig struct {
 
 	// Include caller information
 	IncludeCaller bool `envconfig:"INCLUDE_CALLER" default:"false"`
+}
+
+// TelemetryConfig represents telemetry-specific configuration.
+type TelemetryConfig struct {
+	// OTLP exporter endpoint for sending traces
+	OTLPEndpoint string `envconfig:"OTLP_ENDPOINT"`
+
+	// Service name for tracing
+	ServiceName string `envconfig:"SERVICE_NAME" default:"go-backend-scaffold"`
+
+	// Service version for tracing
+	ServiceVersion string `envconfig:"SERVICE_VERSION" default:"1.0.0"`
 }
 
 // Load loads configuration from environment variables.

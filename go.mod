@@ -3,9 +3,9 @@ module github.com/pannpers/go-backend-scaffold
 go 1.24.4
 
 require (
+	connectrpc.com/connect v1.18.1
 	connectrpc.com/grpchealth v1.4.0
 	github.com/bufbuild/buf v1.55.1
-	github.com/bufbuild/connect-go v1.10.0
 	github.com/golangci/golangci-lint/v2 v2.2.2
 	github.com/google/wire v0.6.0
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -14,7 +14,8 @@ require (
 	github.com/uptrace/bun/dialect/pgdialect v1.2.14
 	github.com/uptrace/bun/driver/pgdriver v1.2.14
 	github.com/vektra/mockery/v3 v3.5.1
-	google.golang.org/grpc v1.73.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.33.0
+	go.opentelemetry.io/otel/sdk v1.36.0
 	mvdan.cc/gofumpt v0.8.0
 )
 
@@ -35,7 +36,6 @@ require (
 	buf.build/go/standard v0.1.0 // indirect
 	cel.dev/expr v0.24.0 // indirect
 	codeberg.org/chavacava/garif v0.2.0 // indirect
-	connectrpc.com/connect v1.18.1 // indirect
 	connectrpc.com/otelconnect v0.7.2 // indirect
 	github.com/4meepo/tagalign v1.4.2 // indirect
 	github.com/Abirdcfly/dupword v0.1.6 // indirect
@@ -74,6 +74,7 @@ require (
 	github.com/butuzov/mirror v1.3.0 // indirect
 	github.com/catenacyber/perfsprint v0.9.1 // indirect
 	github.com/ccojocar/zxcvbn-go v1.0.4 // indirect
+	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charithe/durationcheck v0.0.10 // indirect
 	github.com/charmbracelet/colorprofile v0.2.3-0.20250311203215-f60798e515dc // indirect
@@ -291,7 +292,9 @@ require (
 	go.lsp.dev/uri v0.3.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.36.0 // indirect
 	go.opentelemetry.io/otel/metric v1.36.0 // indirect
+	go.opentelemetry.io/proto/otlp v1.7.0 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/mock v0.5.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
@@ -308,6 +311,7 @@ require (
 	golang.org/x/tools v0.34.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250603155806-513f23925822 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822 // indirect
+	google.golang.org/grpc v1.73.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
@@ -319,7 +323,7 @@ require (
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/otel v1.36.0 // indirect
+	go.opentelemetry.io/otel v1.36.0
 	go.opentelemetry.io/otel/trace v1.36.0
 	google.golang.org/protobuf v1.36.6 // indirect
 )

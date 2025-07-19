@@ -1,4 +1,4 @@
-package connect
+package rpc
 
 import (
 	"context"
@@ -30,7 +30,7 @@ func (h *HealthCheckHandler) Check(ctx context.Context, req *grpchealth.CheckReq
 	// For service-specific checks, you can add logic here
 	// For now, we'll check the database connection for all services
 
-	if err := h.db.Ping(); err != nil {
+	if err := h.db.Ping(ctx); err != nil {
 		h.logger.Error(ctx, "Health check failed: database ping failed", err, slog.String("service", service))
 
 		return &grpchealth.CheckResponse{Status: grpchealth.StatusNotServing}, nil

@@ -3,19 +3,18 @@ package server
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
-	"time"
+	"strconv"
 
 	"log/slog"
 
 	"connectrpc.com/connect"
-	"connectrpc.com/grpchealth"
-	connecthandler "github.com/pannpers/go-backend-scaffold/internal/adapter/connect"
+	"connectrpc.com/otelconnect"
 	"github.com/pannpers/go-backend-scaffold/internal/infrastructure/database/rdb"
 	"github.com/pannpers/go-backend-scaffold/pkg/apperr"
 	"github.com/pannpers/go-backend-scaffold/pkg/config"
 	"github.com/pannpers/go-backend-scaffold/pkg/logging"
-	"github.com/pannpers/protobuf-scaffold/gen/go/proto/api/v1/v1connect"
 )
 
 // ConnectServer represents the Connect server.
@@ -26,51 +25,43 @@ type ConnectServer struct {
 	address string
 }
 
+// RPCHandlerFunc is a function that returns a path and a handler for a Connect RPC service.
+type RPCHandlerFunc func(opts ...connect.HandlerOption) (string, http.Handler)
+
 // NewConnectServer creates a new Connect server instance.
 func NewConnectServer(
 	cfg *config.Config,
 	logger *logging.Logger,
 	db *rdb.Database,
-	userHandler v1connect.UserServiceHandler,
-	postHandler v1connect.PostServiceHandler,
+	handlerFuncs ...RPCHandlerFunc,
 ) *ConnectServer {
 	mux := http.NewServeMux()
 
 	// Create interceptors
+	tracingInterceptor, _ := otelconnect.NewInterceptor()
 	accessLogInterceptor := logging.NewAccessLogInterceptor(logger)
 	errorInterceptor := apperr.NewInterceptor(logger)
 
-	// Create panic recovery handler
-	recoverHandler := connect.WithRecover(func(ctx context.Context, spec connect.Spec, header http.Header, p any) error {
-		logger.Error(ctx, "Panic recovered in Connect handler", fmt.Errorf("panic: %v", p),
-			slog.String("procedure", spec.Procedure),
+	for _, handlerFunc := range handlerFuncs {
+		path, handler := handlerFunc(
+			newRecoverHandler(logger),
+			connect.WithInterceptors(
+				tracingInterceptor,
+				accessLogInterceptor,
+				errorInterceptor,
+			),
 		)
-		return connect.NewError(connect.CodeInternal, fmt.Errorf("internal server error"))
-	})
+		mux.Handle(path, handler)
+	}
 
-	// Register Connect handlers with interceptors and recover option.
-	path, handler := v1connect.NewUserServiceHandler(userHandler, 
-		recoverHandler,
-		connect.WithInterceptors(accessLogInterceptor, errorInterceptor))
-	mux.Handle(path, handler)
-
-	path, handler = v1connect.NewPostServiceHandler(postHandler, 
-		recoverHandler,
-		connect.WithInterceptors(accessLogInterceptor, errorInterceptor))
-	mux.Handle(path, handler)
-
-	// Register health check handler.
-	healthChecker := connecthandler.NewHealthCheckHandler(db, logger)
-	mux.Handle(grpchealth.NewHandler(healthChecker))
-
-	address := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
+	address := net.JoinHostPort(cfg.Server.Host, strconv.Itoa(cfg.Server.Port))
 
 	server := &http.Server{
-		Addr:         address,
-		Handler:      mux,
-		ReadTimeout:  time.Duration(cfg.Server.ReadTimeout) * time.Second,
-		WriteTimeout: time.Duration(cfg.Server.WriteTimeout) * time.Second,
-		IdleTimeout:  time.Duration(cfg.Server.IdleTimeout) * time.Second,
+		Addr:              address,
+		Handler:           http.TimeoutHandler(mux, cfg.Server.HandlerTimeout, ""),
+		ReadHeaderTimeout: cfg.Server.ReadHeaderTimeout,
+		ReadTimeout:       cfg.Server.ReadTimeout,
+		IdleTimeout:       cfg.Server.IdleTimeout,
 	}
 
 	return &ConnectServer{
@@ -91,15 +82,25 @@ func (s *ConnectServer) Start() error {
 // Stop gracefully stops the Connect server.
 func (s *ConnectServer) Stop() error {
 	if s.server != nil {
-		timeout := s.Cfg.Server.ShutdownTimeout
+		timeout := s.Cfg.ShutdownTimeout
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
-		s.logger.Info(ctx, "Shutting down Connect server gracefully...", slog.Int("timeout_sec", timeout))
+		s.logger.Info(ctx, "Shutting down Connect server gracefully...", slog.Duration("timeout", timeout))
 
 		return s.server.Shutdown(ctx)
 	}
 
 	return nil
+}
+
+func newRecoverHandler(logger *logging.Logger) connect.HandlerOption {
+	return connect.WithRecover(func(ctx context.Context, spec connect.Spec, header http.Header, p any) error {
+		logger.Error(ctx, "Panic recovered in Connect handler", fmt.Errorf("panic: %v", p),
+			slog.String("procedure", spec.Procedure),
+		)
+
+		return connect.NewError(connect.CodeInternal, fmt.Errorf("internal server error"))
+	})
 }

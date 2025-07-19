@@ -2,6 +2,7 @@ package config
 
 import (
 	"testing"
+	"time"
 
 	"github.com/kelseyhightower/envconfig"
 	"github.com/stretchr/testify/assert"
@@ -25,14 +26,16 @@ func TestLoad(t *testing.T) {
 				"APP_DATABASE_PASSWORD": "defaultpass",
 			},
 			want: &Config{
-				Environment: "development",
-				Debug:       false,
+				Environment:     "development",
+				Debug:           false,
+				ShutdownTimeout: 30 * time.Second,
 				Server: ServerConfig{
-					Port:         8080,
-					Host:         "localhost",
-					ReadTimeout:  30,
-					WriteTimeout: 30,
-					IdleTimeout:  60,
+					Port:              8080,
+					Host:              "localhost",
+					ReadHeaderTimeout: 500 * time.Millisecond,
+					ReadTimeout:       1 * time.Second,
+					HandlerTimeout:    5 * time.Second,
+					IdleTimeout:       3 * time.Second,
 				},
 				Database: DatabaseConfig{
 					Host:            "localhost",
@@ -51,6 +54,11 @@ func TestLoad(t *testing.T) {
 					Structured:    true,
 					IncludeCaller: false,
 				},
+				Telemetry: TelemetryConfig{
+					OTLPEndpoint:   "",
+					ServiceName:    "go-backend-scaffold",
+					ServiceVersion: "1.0.0",
+				},
 			},
 			wantErr: nil,
 		},
@@ -58,25 +66,32 @@ func TestLoad(t *testing.T) {
 			name:   "load with custom values",
 			prefix: "APP",
 			envVars: map[string]string{
-				"APP_ENVIRONMENT":       "production",
-				"APP_DEBUG":             "true",
-				"APP_SERVER_PORT":       "9090",
-				"APP_SERVER_HOST":       "0.0.0.0",
-				"APP_DATABASE_NAME":     "testdb",
-				"APP_DATABASE_USER":     "testuser",
-				"APP_DATABASE_PASSWORD": "testpass",
-				"APP_LOGGING_LEVEL":     "debug",
-				"APP_LOGGING_FORMAT":    "text",
+				"APP_ENVIRONMENT":                "production",
+				"APP_DEBUG":                      "true",
+				"APP_SHUTDOWN_TIMEOUT":           "15s",
+				"APP_SERVER_PORT":                "9090",
+				"APP_SERVER_HOST":                "0.0.0.0",
+				"APP_SERVER_READ_HEADER_TIMEOUT": "200ms",
+				"APP_SERVER_READ_TIMEOUT":        "2s",
+				"APP_SERVER_HANDLER_TIMEOUT":     "10s",
+				"APP_SERVER_IDLE_TIMEOUT":        "45s",
+				"APP_DATABASE_NAME":              "testdb",
+				"APP_DATABASE_USER":              "testuser",
+				"APP_DATABASE_PASSWORD":          "testpass",
+				"APP_LOGGING_LEVEL":              "debug",
+				"APP_LOGGING_FORMAT":             "text",
 			},
 			want: &Config{
-				Environment: "production",
-				Debug:       true,
+				Environment:     "production",
+				Debug:           true,
+				ShutdownTimeout: 15 * time.Second,
 				Server: ServerConfig{
-					Port:         9090,
-					Host:         "0.0.0.0",
-					ReadTimeout:  30,
-					WriteTimeout: 30,
-					IdleTimeout:  60,
+					Port:              9090,
+					Host:              "0.0.0.0",
+					ReadHeaderTimeout: 200 * time.Millisecond,
+					ReadTimeout:       2 * time.Second,
+					HandlerTimeout:    10 * time.Second,
+					IdleTimeout:       45 * time.Second,
 				},
 				Database: DatabaseConfig{
 					Host:            "localhost",
@@ -94,6 +109,11 @@ func TestLoad(t *testing.T) {
 					Format:        "text",
 					Structured:    true,
 					IncludeCaller: false,
+				},
+				Telemetry: TelemetryConfig{
+					OTLPEndpoint:   "",
+					ServiceName:    "go-backend-scaffold",
+					ServiceVersion: "1.0.0",
 				},
 			},
 			wantErr: nil,
@@ -262,7 +282,7 @@ func TestDatabaseConfig_GetDSN(t *testing.T) {
 		SSLMode:  "disable",
 	}
 
-	expected := "host=localhost port=5432 user=testuser password=testpass dbname=testdb sslmode=disable"
+	expected := "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable"
 	assert.Equal(t, expected, dbConfig.GetDSN())
 }
 

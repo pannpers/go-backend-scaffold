@@ -18,19 +18,16 @@ import (
 type Database struct {
 	db     *bun.DB
 	logger *logging.Logger
-	cfg    *config.Config
 }
 
 // New creates a new database instance with connection and ping verification.
-func New(cfg *config.Config, logger *logging.Logger) (*Database, error) {
+func New(ctx context.Context, cfg *config.Config, logger *logging.Logger) (*Database, error) {
 	// Create PostgreSQL driver
 	dsn := cfg.Database.GetDSN()
 	driver := pgdriver.NewConnector(pgdriver.WithDSN(dsn))
 
-	// Create sql.DB instance
 	sqldb := sql.OpenDB(driver)
 
-	// Create Bun database instance
 	db := bun.NewDB(sqldb, pgdialect.New())
 
 	// Set connection pool settings
@@ -38,19 +35,16 @@ func New(cfg *config.Config, logger *logging.Logger) (*Database, error) {
 	sqldb.SetMaxIdleConns(cfg.Database.MaxIdleConns)
 	sqldb.SetConnMaxLifetime(time.Duration(cfg.Database.ConnMaxLifetime) * time.Second)
 
-	// Create database instance
 	database := &Database{
 		db:     db,
 		logger: logger,
-		cfg:    cfg,
 	}
 
-	// Verify connection with ping
-	if err := database.Ping(); err != nil {
+	if err := database.Ping(ctx); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	logger.Info(context.Background(), "Database connection established successfully",
+	logger.Info(ctx, "Database connection established successfully",
 		slog.String("host", cfg.Database.Host),
 		slog.Int("port", cfg.Database.Port),
 		slog.String("database", cfg.Database.Name),
@@ -64,11 +58,15 @@ func New(cfg *config.Config, logger *logging.Logger) (*Database, error) {
 const pingTimeout = 5 * time.Second
 
 // Ping verifies the database connection.
-func (d *Database) Ping() error {
-	ctx, cancel := context.WithTimeout(context.Background(), pingTimeout)
+func (d *Database) Ping(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, pingTimeout)
 	defer cancel()
 
-	return d.db.PingContext(ctx)
+	if err := d.db.PingContext(ctx); err != nil {
+		return fmt.Errorf("failed to ping database: %w", err)
+	}
+
+	return nil
 }
 
 // Close closes the database connection.

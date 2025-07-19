@@ -1,11 +1,11 @@
-package connect
+package rpc
 
 import (
 	"context"
 	"errors"
 
 	"connectrpc.com/connect"
-	"github.com/pannpers/go-backend-scaffold/internal/adapter/connect/mapper"
+	"github.com/pannpers/go-backend-scaffold/internal/adapter/rpc/mapper"
 	"github.com/pannpers/go-backend-scaffold/internal/usecase"
 	"github.com/pannpers/go-backend-scaffold/pkg/logging"
 	api "github.com/pannpers/protobuf-scaffold/gen/go/proto/api/v1"
@@ -24,8 +24,6 @@ func NewPostHandler(postUseCase *usecase.PostUseCase, logger *logging.Logger) *P
 		logger:      logger,
 	}
 }
-
-
 
 // GetPost retrieves a post by ID.
 func (h *PostHandler) GetPost(ctx context.Context, req *connect.Request[api.GetPostRequest]) (*connect.Response[api.GetPostResponse], error) {

@@ -7,8 +7,16 @@ import (
 	"io"
 	"log"
 
+	"github.com/pannpers/go-backend-scaffold/internal/infrastructure/database/rdb"
 	"github.com/pannpers/go-backend-scaffold/internal/infrastructure/server"
 )
+
+func newApp(server *server.ConnectServer, db *rdb.Database, telemetryCloser io.Closer) *App {
+	return &App{
+		Server:  server,
+		Closers: []io.Closer{db, telemetryCloser},
+	}
+}
 
 type App struct {
 	Server  *server.ConnectServer

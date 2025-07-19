@@ -21,7 +21,7 @@ func main() {
 
 	log.Println("Starting server...")
 
-	app, err := di.InitializeApp()
+	app, err := di.InitializeApp(ctx)
 	if err != nil {
 		log.Fatalf("Failed to initialize API: %v", err)
 	}
