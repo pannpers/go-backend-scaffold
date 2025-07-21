@@ -22,8 +22,8 @@ func InitializeApp(ctx context.Context) (*App, error) {
 		provideTelemetry,
 
 		// Repository layer
-		provideMockUserRepository,
-		provideMockPostRepository,
+		provideUserRepository,
+		providePostRepository,
 
 		// Use case layer
 		usecase.NewUserUseCase,

@@ -25,9 +25,9 @@ func InitializeApp(ctx context.Context) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	userRepository := provideMockUserRepository()
+	userRepository := provideUserRepository(database)
 	userUseCase := usecase.NewUserUseCase(userRepository, logger)
-	postRepository := provideMockPostRepository()
+	postRepository := providePostRepository(database)
 	postUseCase := usecase.NewPostUseCase(postRepository, logger)
 	v := provideHandlerFuncs(logger, database, userUseCase, postUseCase)
 	connectServer := server.NewConnectServer(config, logger, database, v...)

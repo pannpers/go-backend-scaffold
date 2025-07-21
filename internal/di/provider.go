@@ -153,3 +153,13 @@ func provideMockUserRepository() entity.UserRepository {
 func provideMockPostRepository() entity.PostRepository {
 	return &MockPostRepository{}
 }
+
+// provideUserRepository creates a user repository implementation using the database.
+func provideUserRepository(db *rdb.Database) entity.UserRepository {
+	return rdb.NewUserRepository(db)
+}
+
+// providePostRepository creates a post repository implementation using the database.
+func providePostRepository(db *rdb.Database) entity.PostRepository {
+	return rdb.NewPostRepository(db)
+}

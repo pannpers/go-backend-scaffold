@@ -16,7 +16,7 @@ import (
 
 // Database represents the database instance.
 type Database struct {
-	db     *bun.DB
+	*bun.DB
 	logger *logging.Logger
 }
 
@@ -36,7 +36,7 @@ func New(ctx context.Context, cfg *config.Config, logger *logging.Logger) (*Data
 	sqldb.SetConnMaxLifetime(time.Duration(cfg.Database.ConnMaxLifetime) * time.Second)
 
 	database := &Database{
-		db:     db,
+		DB:     db,
 		logger: logger,
 	}
 
@@ -62,7 +62,7 @@ func (d *Database) Ping(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, pingTimeout)
 	defer cancel()
 
-	if err := d.db.PingContext(ctx); err != nil {
+	if err := d.PingContext(ctx); err != nil {
 		return fmt.Errorf("failed to ping database: %w", err)
 	}
 
@@ -71,16 +71,13 @@ func (d *Database) Ping(ctx context.Context) error {
 
 // Close closes the database connection.
 func (d *Database) Close() error {
-	if d.db != nil {
+	if d.DB != nil {
 		d.logger.Info(context.Background(), "Closing database connection")
 
-		return d.db.Close()
+		if err := d.DB.Close(); err != nil {
+			return fmt.Errorf("failed to close database connection: %w", err)
+		}
 	}
 
 	return nil
-}
-
-// GetDB returns the underlying Bun database instance.
-func (d *Database) GetDB() *bun.DB {
-	return d.db
 }
