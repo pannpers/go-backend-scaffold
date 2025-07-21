@@ -54,6 +54,49 @@ buf curl --schema buf.build/grpc/health --protocol connect \
 
 ## Architecture
 
+### Directory Structure
+
+This project follows the [Go project layout standards](https://github.com/golang-standards/project-layout) for the project root organization:
+
+```
+├── cmd/                    # Main applications for this project
+├── internal/               # Private application and library code
+├── pkg/                    # Library code that's ok to use by external applications
+├── api/                    # OpenAPI/Swagger specs, JSON schema files, protocol definition files
+├── compose.yml             # Docker Compose configuration
+├── Dockerfile              # Container build instructions
+├── go.mod                  # Go module definition
+└── README.md              # Project documentation
+```
+
+The `internal/` directory follows **Clean Architecture** principles with clear separation of concerns:
+
+```
+internal/
+├── adapter/               # Interface Adapters Layer
+│   └── rpc/              # Connect-RPC handlers (controllers)
+│       └── mapper/       # Data transformation between layers
+├── di/                   # Dependency Injection
+│   ├── app.go           # Application initialization
+│   ├── provider.go      # Wire providers
+│   ├── wire.go          # Wire provider definitions
+│   └── wire_gen.go      # Generated DI code
+├── entity/               # Enterprise Business Rules Layer
+│   ├── user.go          # User domain entity
+│   ├── post.go          # Post domain entity
+│   └── mocks.go         # Entity mocks for testing
+├── infrastructure/       # Frameworks & Drivers Layer
+│   ├── database/        # Database implementations
+│   │   └── rdb/         # Relational database (PostgreSQL)
+│   └── server/          # Server implementations
+│       └── connect.go   # Connect-RPC server setup
+└── usecase/             # Application Business Rules Layer
+    ├── user.go          # User use case implementations
+    ├── user_test.go     # User use case tests
+    ├── post.go          # Post use case implementations
+    └── post_test.go     # Post use case tests
+```
+
 ### Clean Architecture Layers
 - **cmd/**: Application entry points (main.go)
 - **internal/adapter/**: Interface adapters (Connect-RPC handlers)
@@ -64,13 +107,13 @@ buf curl --schema buf.build/grpc/health --protocol connect \
 - **pkg/**: Reusable packages (config, logging, apperr, telemetry)
 
 ### Key Dependencies
-- **Connect-RPC**: `connectrpc.com/connect` for HTTP/gRPC-compatible APIs
-- **Wire**: `github.com/google/wire` for compile-time dependency injection  
-- **Protobuf**: Uses `github.com/pannpers/protobuf-scaffold` for shared definitions
-- **Database**: Bun ORM with PostgreSQL support via `github.com/uptrace/bun`
+- **Connect-RPC**: [`connectrpc.com/connect`](https://connectrpc.com/connect) for HTTP/gRPC-compatible APIs
+- **Wire**: [`github.com/google/wire`](https://github.com/google/wire) for compile-time dependency injection  
+- **Protobuf**: Uses [`github.com/pannpers/protobuf-scaffold`](https://github.com/pannpers/protobuf-scaffold) for shared definitions
+- **Database**: Bun ORM with PostgreSQL support via [`github.com/uptrace/bun`](https://github.com/uptrace/bun)
 - **Logging**: Custom structured logging with OpenTelemetry integration
-- **Tracing**: OpenTelemetry distributed tracing with `connectrpc.com/otelconnect`
-- **Health Checks**: `connectrpc.com/grpchealth` for gRPC-compatible health monitoring
+- **Tracing**: OpenTelemetry distributed tracing with [`connectrpc.com/otelconnect`](https://connectrpc.com/otelconnect)
+- **Health Checks**: [`connectrpc.com/grpchealth`](https://connectrpc.com/grpchealth) for gRPC-compatible health monitoring
 
 ### Configuration Management
 The project uses environment variables for configuration with prefix support:
