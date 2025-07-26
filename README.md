@@ -4,7 +4,8 @@ A modern Go backend scaffold following clean architecture principles with gRPC s
 
 ## Features
 
-- **gRPC Server**: Built-in gRPC server with protobuf support
+- **Connect-RPC Server**: HTTP/gRPC-compatible server with protobuf support
+- **Database Migrations**: Atlas-powered versioned migrations with schema generation from Bun models
 - **Structured Logging**: Advanced logger with OpenTelemetry integration for distributed tracing
 - **Dependency Injection**: Wire-based dependency injection for clean architecture
 - **Clean Architecture**: Well-organized project structure following domain-driven design
@@ -32,6 +33,8 @@ A modern Go backend scaffold following clean architecture principles with gRPC s
 ## Prerequisites
 
 - Go 1.24 or later
+- Atlas CLI (for database migrations)
+- PostgreSQL (for database development)
 - Protocol Buffers compiler (for gRPC development)
 
 ## Getting Started
@@ -49,6 +52,19 @@ cd go-backend-scaffold
 
 ```bash
 go mod download
+```
+
+3. Install Atlas CLI:
+
+```bash
+# Install Atlas CLI
+curl -sSf https://atlasgo.sh | sh
+```
+
+4. Start the database (optional, for local development):
+
+```bash
+podman compose up -d postgres
 ```
 
 ### Running the Application
@@ -105,6 +121,46 @@ buf curl --schema ../protobuf-scaffold --protocol connect \
 - **Protocol:** Always use `--protocol connect` for Connect servers.
 - **Schema:** Point `--schema` to your local protobuf directory or module root (e.g., `../protobuf-scaffold`).
 - **No need for `--http2-prior-knowledge`**: The Connect server works with plain HTTP/1.1 for buf curl.
+
+### Database Migrations
+
+This project uses Atlas for database schema management with versioned migrations.
+
+#### Generating a New Migration (Recommended)
+
+This project uses `mise` to streamline the migration workflow. To generate a new migration file from your model changes, simply run:
+
+```bash
+# This single command will automatically:
+# 1. Generate schema.sql from your Bun models.
+# 2. Compare it with the current database state and create a new migration file.
+mise run migrate <migration_name>
+
+# Example:
+mise run migrate create_users_table
+```
+
+#### Atlas Migration Commands
+
+```bash
+# Generate migration from schema changes
+atlas migrate diff --env local
+
+# Validate migrations
+atlas migrate validate --env local
+
+# Apply migrations (local development only)
+atlas migrate apply --env local
+```
+
+#### Migration Directory Structure
+
+```
+internal/infrastructure/database/rdb/migrations/
+├── generate_schema.go    # Schema generation script
+├── schema.sql           # Base schema file
+└── versions/            # Versioned migration files
+```
 
 ### Development
 
@@ -174,7 +230,9 @@ This scaffold follows clean architecture principles:
 
 ## Dependencies
 
-- **gRPC**: `google.golang.org/grpc` for RPC communication
+- **Connect-RPC**: `connectrpc.com/connect` for HTTP/gRPC-compatible APIs
+- **Atlas**: Database migration tool with versioned migrations
+- **Bun ORM**: `github.com/uptrace/bun` for PostgreSQL database access
 - **Wire**: `github.com/google/wire` for dependency injection
 - **OpenTelemetry**: `go.opentelemetry.io/otel` for distributed tracing
 - **Protobuf Scaffold**: `github.com/pannpers/protobuf-scaffold` for shared protobuf definitions

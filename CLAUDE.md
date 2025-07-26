@@ -32,6 +32,21 @@ wire internal/di/
 
 # Generate protobuf code (if working with proto files)
 buf generate
+
+# Generate database schema from Bun models
+go run internal/infrastructure/database/rdb/migrations/generate_schema.go
+```
+
+### Database Migrations with Atlas
+```bash
+# Generate migration from schema changes
+atlas migrate diff --env local
+
+# Validate migrations
+atlas migrate validate --env local
+
+# Apply migrations (for local development only)
+atlas migrate apply --env local
 ```
 
 ### API Testing with buf curl
@@ -88,6 +103,10 @@ internal/
 ├── infrastructure/       # Frameworks & Drivers Layer
 │   ├── database/        # Database implementations
 │   │   └── rdb/         # Relational database (PostgreSQL)
+│   │       └── migrations/ # Atlas migration files
+│   │           ├── generate_schema.go # Schema generation script
+│   │           ├── schema.sql        # Base schema file
+│   │           └── versions/         # Versioned migration files
 │   └── server/          # Server implementations
 │       └── connect.go   # Connect-RPC server setup
 └── usecase/             # Application Business Rules Layer
@@ -161,6 +180,19 @@ Handlers are in `internal/adapter/rpc/` and implement the generated service inte
 - Uses Bun ORM with PostgreSQL driver
 - Database configuration via environment variables (see config package)
 - Connection management handled in `internal/infrastructure/database/rdb/`
+- Schema migrations managed with Atlas following versioned migrations strategy
+
+### Database Migrations
+The project uses Atlas for database schema management:
+- **Migration Directory**: `internal/infrastructure/database/rdb/migrations/`
+- **Schema Generation**: Run `go run internal/infrastructure/database/rdb/migrations/generate_schema.go` to generate DDL from Bun models
+- **Versioned Migrations**: Atlas creates versioned migration files in `versions/` directory  
+- **CI Integration**: GitHub Actions validates migrations but does not apply them
+- **Configuration**: `atlas.hcl` defines environments and database connections
+- **Commands**:
+  - `atlas migrate diff --env local` - Generate migration from schema changes
+  - `atlas migrate validate --env local` - Validate migration files
+  - `atlas migrate apply --env local` - Apply migrations (local development only)
 
 ### Distributed Tracing
 The project includes OpenTelemetry distributed tracing support:

@@ -3,7 +3,6 @@ package rdb_test
 import (
 	"context"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/pannpers/go-backend-scaffold/internal/infrastructure/database/rdb"
@@ -68,15 +67,6 @@ func setupTestDatabase() *rdb.Database {
 	)
 	if err != nil {
 		panic("Failed to reset models: " + err.Error())
-	}
-
-	// Add foreign key constraint
-	_, err = db.NewRaw("ALTER TABLE posts ADD CONSTRAINT fk_posts_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE").Exec(ctx)
-	if err != nil {
-		// Ignore error if constraint already exists
-		if !strings.Contains(err.Error(), "already exists") {
-			panic("Failed to add foreign key constraint: " + err.Error())
-		}
 	}
 
 	return db
