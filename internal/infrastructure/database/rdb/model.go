@@ -57,7 +57,7 @@ type Post struct {
 	UpdatedAt time.Time `bun:",nullzero,notnull,default:current_timestamp"`
 
 	// Relations
-	User *User `bun:"rel:belongs-to,join:user_id=id"`
+	User *User `bun:"rel:belongs-to,join:user_id=id,on_delete:CASCADE"`
 }
 
 // ToEntity converts database model to domain entity.
