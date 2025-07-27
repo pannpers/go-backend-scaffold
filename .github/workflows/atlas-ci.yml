@@ -30,27 +30,20 @@ jobs:
           - 5432:5432
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
+      - name: Setup Atlas
+        uses: ariga/setup-atlas@v0
+        # with:
+        #   cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 
-      - name: Generate current schema
-        run: |
-          go run internal/infrastructure/database/rdb/migrations/generate_schema.go
-
-      - name: Atlas Migrate Lint
-        uses: ariga/atlas-action/migrate/lint@v1
-        with:
-          env: ci
-
-      - name: Atlas Migrate Validate
-        uses: ariga/atlas-action/migrate/validate@v1
-        with:
-          env: ci
+      # TODO: enable after Atlas Cloud is available
+      # - name: Atlas Migrate Lint
+      #   uses: ariga/atlas-action/migrate/lint@v1
+      #   with:
+      #     dir: file://internal/infrastructure/database/rdb/migrations/versions
+      #     dev-url: ${{ env.DATABASE_URL }}
+      #     dir-name: pannpers
+      #     env: ci

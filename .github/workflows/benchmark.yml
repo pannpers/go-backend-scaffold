@@ -34,5 +34,13 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Apply schema
+        run: psql -h localhost -p 5432 -U testuser -d scaffold_test -f internal/infrastructure/database/rdb/migrations/schema.sql
+        env:
+          PGPASSWORD: testpassword
+
       - name: Run benchmarks
         run: go test -bench=. -benchmem -run=^$ ./...

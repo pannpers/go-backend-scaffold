@@ -24,7 +24,9 @@ func TestMain(m *testing.M) {
 
 	// Clean up database if it was initialized
 	if testDB != nil {
-		testDB.Close()
+		if err := testDB.Close(); err != nil {
+			panic("Failed to close test database: " + err.Error())
+		}
 	}
 
 	os.Exit(code)
@@ -54,19 +56,19 @@ func setupTestDatabase() *rdb.Database {
 		panic("Failed to connect to test database: " + err.Error())
 	}
 
-	// Enable UUID extension
-	_, err = db.NewRaw("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"").Exec(ctx)
-	if err != nil {
-		panic("Failed to create uuid-ossp extension: " + err.Error())
-	}
-
-	// Reset test tables
-	err = db.ResetModel(ctx,
+	models := []interface{}{
 		(*rdb.User)(nil),
 		(*rdb.Post)(nil),
-	)
-	if err != nil {
-		panic("Failed to reset models: " + err.Error())
+	}
+
+	for _, model := range models {
+		_, err := db.DB.NewTruncateTable().
+			Model(model).
+			Cascade().
+			Exec(ctx)
+		if err != nil {
+			panic("Failed to clean table: " + err.Error())
+		}
 	}
 
 	return db

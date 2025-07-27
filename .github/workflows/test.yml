@@ -39,6 +39,14 @@ jobs:
       - name: Verify dependencies
         run: go mod verify
 
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Apply schema
+        run: psql -h localhost -p 5432 -U testuser -d scaffold_test -f internal/infrastructure/database/rdb/migrations/schema.sql
+        env:
+          PGPASSWORD: testpassword
+
       - name: Run tests with race detection and coverage
         run: go test -race -v -timeout=5m -coverprofile=coverage.out -covermode=atomic ./...
 
