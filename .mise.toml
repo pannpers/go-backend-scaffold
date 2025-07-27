@@ -7,6 +7,7 @@
 go = "1.24.4"    # Use the version from go.mod
 atlas = "latest" # Use the latest version of Atlas
 
+
 # Defines custom tasks for the project.
 [tasks.generate-schema]
 description = "Generate schema.sql from Bun models"
@@ -23,3 +24,8 @@ description = "Generate a new migration file from model changes"
 usage = "mise run migrate <migration_name>"
 run = "atlas migrate diff --env local {{.ARGV}}"
 depends = ["generate-schema"]
+
+[tasks.lint]
+description = "Run golangci-lint"
+run = "golangci-lint run ./... --timeout=3m --fix"
+sources = ["**/*.go", "go.mod", ".golangci.yml"]

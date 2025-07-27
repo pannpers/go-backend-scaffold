@@ -164,6 +164,15 @@ internal/infrastructure/database/rdb/migrations/
 
 ### Development
 
+#### Linting
+
+This project uses `golangci-lint` for linting. You can run the linter using `mise`:
+
+```bash
+# This will run all configured linters
+mise run lint
+```
+
 #### Logger Usage
 
 The scaffold includes a powerful structured logger with OpenTelemetry integration:

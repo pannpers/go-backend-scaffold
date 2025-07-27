@@ -29,7 +29,7 @@ You can generate this list by running `git log --oneline main..HEAD` and pasting
 - [ ] I have linked the related issue.
 - [ ] I have added or updated tests to cover my changes.
 - [ ] I have updated the relevant documentation (e.g., `README.md`, `CLAUDE.md`).
-- [ ] I have run `go test -race ./...` and `golangci-lint run` locally and all checks have passed.
+- [ ] I have run `go test -race ./...` and `mise run lint` locally and all checks have passed.
 - [ ] My code follows the architecture and style guidelines of the project.
 
 ## 📸 Screenshots or Logs
