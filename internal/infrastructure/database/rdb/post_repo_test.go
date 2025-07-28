@@ -197,13 +197,6 @@ func TestPostRepository_Get(t *testing.T) {
 				return
 			}
 
-			// Special case for malformed UUID - just check that there's an error
-			if tt.args.id == "not-a-uuid" {
-				assert.Error(t, err)
-				assert.Nil(t, got)
-				return
-			}
-
 			assert.NoError(t, err)
 
 			// Assert post fields

@@ -142,18 +142,6 @@ func (m *MockPostRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// provideMockUserRepository creates a mock user repository implementation.
-// TODO: Replace with actual database implementation
-func provideMockUserRepository() entity.UserRepository {
-	return &MockUserRepository{}
-}
-
-// provideMockPostRepository creates a mock post repository implementation.
-// TODO: Replace with actual database implementation
-func provideMockPostRepository() entity.PostRepository {
-	return &MockPostRepository{}
-}
-
 // provideUserRepository creates a user repository implementation using the database.
 func provideUserRepository(db *rdb.Database) entity.UserRepository {
 	return rdb.NewUserRepository(db)
