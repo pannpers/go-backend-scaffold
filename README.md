@@ -9,7 +9,7 @@ A modern Go backend scaffold following clean architecture principles with gRPC s
 - **Structured Logging**: Advanced logger with OpenTelemetry integration for distributed tracing
 - **Dependency Injection**: Wire-based dependency injection for clean architecture
 - **Clean Architecture**: Well-organized project structure following domain-driven design
-- **Protobuf Integration**: Ready-to-use with `github.com/pannpers/protobuf-scaffold`
+- **Protobuf Integration**: Ready-to-use with `buf.build/pannpers/scaffold` from BSR
 
 ## Project Structure
 
@@ -89,7 +89,7 @@ You can test your Connect API endpoints using [buf curl](https://docs.buf.build/
 
 - [buf CLI](https://docs.buf.build/installation)
 - The Connect server running locally (see below)
-- Access to your protobuf schema (e.g., `../protobuf-scaffold`)
+- Access to the protobuf schema from BSR (`buf.build/pannpers/scaffold`)
 
 #### Start the Connect Server
 
@@ -102,24 +102,24 @@ The Connect server will start on port 9090.
 #### Example: GetUser
 
 ```bash
-buf curl --schema ../protobuf-scaffold --protocol connect \
-  -d '{"user_id": "123"}' \
-  http://localhost:9090/api.UserService/GetUser
+buf curl --schema buf.build/pannpers/scaffold --protocol connect \
+  -d '{"user_id": {"value": "123"}}' \
+  http://localhost:9090/pannpers.api.v1.UserService/GetUser
 ```
 
 #### Example: CreateUser
 
 ```bash
-buf curl --schema ../protobuf-scaffold --protocol connect \
-  -d '{"user": {"id": {"value": "test123"}, "name": {"value": "John Doe"}, "email": {"value": "john@example.com"}}}' \
-  http://localhost:9090/api.UserService/CreateUser
+buf curl --schema buf.build/pannpers/scaffold --protocol connect \
+  -d '{"title": {"value": "Sample Post"}, "author_id": {"value": "user123"}}' \
+  http://localhost:9090/pannpers.api.v1.PostService/CreatePost
 ```
 
 #### Notes
 
-- **Service paths:** Use `/api.UserService/` and `/api.PostService/` (not `connect.api.v1.UserService`).
+- **Service paths:** Use `/pannpers.api.v1.UserService/` and `/pannpers.api.v1.PostService/` for BSR schema.
 - **Protocol:** Always use `--protocol connect` for Connect servers.
-- **Schema:** Point `--schema` to your local protobuf directory or module root (e.g., `../protobuf-scaffold`).
+- **Schema:** Use BSR schema reference `buf.build/pannpers/scaffold` for direct access to protobuf definitions.
 - **No need for `--http2-prior-knowledge`**: The Connect server works with plain HTTP/1.1 for buf curl.
 
 ### Database Migrations
@@ -244,7 +244,7 @@ This scaffold follows clean architecture principles:
 - **Bun ORM**: `github.com/uptrace/bun` for PostgreSQL database access
 - **Wire**: `github.com/google/wire` for dependency injection
 - **OpenTelemetry**: `go.opentelemetry.io/otel` for distributed tracing
-- **Protobuf Scaffold**: `github.com/pannpers/protobuf-scaffold` for shared protobuf definitions
+- **Protobuf Scaffold**: `buf.build/pannpers/scaffold` for shared protobuf definitions from BSR
 
 ## Contributing
 

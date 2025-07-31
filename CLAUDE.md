@@ -52,14 +52,14 @@ atlas migrate apply --env local
 ### API Testing with buf curl
 ```bash
 # Test GetUser endpoint
-buf curl --schema ../protobuf-scaffold --protocol connect \
-  -d '{"user_id": "123"}' \
-  http://localhost:9090/api.UserService/GetUser
+buf curl --schema buf.build/pannpers/scaffold --protocol connect \
+  -d '{"user_id": {"value": "123"}}' \
+  http://localhost:9090/pannpers.api.v1.UserService/GetUser
 
-# Test CreateUser endpoint  
-buf curl --schema ../protobuf-scaffold --protocol connect \
-  -d '{"user": {"id": {"value": "test123"}, "name": {"value": "John Doe"}, "email": {"value": "john@example.com"}}}' \
-  http://localhost:9090/api.UserService/CreateUser
+# Test CreatePost endpoint  
+buf curl --schema buf.build/pannpers/scaffold --protocol connect \
+  -d '{"title": {"value": "Sample Post"}, "author_id": {"value": "user123"}}' \
+  http://localhost:9090/pannpers.api.v1.PostService/CreatePost
 
 # Test Health Check endpoint
 buf curl --schema buf.build/grpc/health --protocol connect \

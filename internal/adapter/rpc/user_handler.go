@@ -8,7 +8,7 @@ import (
 	"github.com/pannpers/go-backend-scaffold/internal/adapter/rpc/mapper"
 	"github.com/pannpers/go-backend-scaffold/internal/usecase"
 	"github.com/pannpers/go-backend-scaffold/pkg/logging"
-	api "github.com/pannpers/protobuf-scaffold/gen/go/proto/api/v1"
+	api "buf.build/gen/go/pannpers/scaffold/protocolbuffers/go/pannpers/api/v1"
 )
 
 // UserHandler implements the UserService Connect interface.
@@ -31,12 +31,12 @@ func (h *UserHandler) GetUser(ctx context.Context, req *connect.Request[api.GetU
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("request cannot be nil"))
 	}
 
-	if req.Msg.UserId == "" {
+	if req.Msg.UserId == nil || req.Msg.UserId.GetValue() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("user_id is required"))
 	}
 
 	// Use the use case layer for business logic
-	user, err := h.userUseCase.GetUser(ctx, req.Msg.UserId)
+	user, err := h.userUseCase.GetUser(ctx, req.Msg.UserId.GetValue())
 	if err != nil {
 		return nil, err
 	}

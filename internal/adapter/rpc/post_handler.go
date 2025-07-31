@@ -8,7 +8,7 @@ import (
 	"github.com/pannpers/go-backend-scaffold/internal/adapter/rpc/mapper"
 	"github.com/pannpers/go-backend-scaffold/internal/usecase"
 	"github.com/pannpers/go-backend-scaffold/pkg/logging"
-	api "github.com/pannpers/protobuf-scaffold/gen/go/proto/api/v1"
+	api "buf.build/gen/go/pannpers/scaffold/protocolbuffers/go/pannpers/api/v1"
 )
 
 // PostHandler implements the PostService Connect interface.
@@ -31,12 +31,12 @@ func (h *PostHandler) GetPost(ctx context.Context, req *connect.Request[api.GetP
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("request cannot be nil"))
 	}
 
-	if req.Msg.PostId == "" {
+	if req.Msg.PostId == nil || req.Msg.PostId.GetValue() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("post_id is required"))
 	}
 
 	// Use the use case layer for business logic
-	post, err := h.postUseCase.GetPost(ctx, req.Msg.PostId)
+	post, err := h.postUseCase.GetPost(ctx, req.Msg.PostId.GetValue())
 	if err != nil {
 		return nil, err
 	}
@@ -52,15 +52,16 @@ func (h *PostHandler) CreatePost(ctx context.Context, req *connect.Request[api.C
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("request cannot be nil"))
 	}
 
-	if req.Msg.Post == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("post is required"))
+	if req.Msg.Title == nil || req.Msg.Title.GetValue() == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("title is required"))
 	}
 
-	// TODO: Extract user ID from context/authentication
-	userID := "default-user-id"
+	if req.Msg.AuthorId == nil || req.Msg.AuthorId.GetValue() == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("author_id is required"))
+	}
 
 	// Convert protobuf to domain DTO
-	newPost := mapper.NewPostFromProto(req.Msg.Post, userID)
+	newPost := mapper.NewPostFromCreateRequest(req.Msg.Title.GetValue(), req.Msg.AuthorId.GetValue())
 
 	// Use the use case layer for business logic
 	createdPost, err := h.postUseCase.CreatePost(ctx, newPost)

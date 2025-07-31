@@ -3,6 +3,8 @@ module github.com/pannpers/go-backend-scaffold
 go 1.24.4
 
 require (
+	buf.build/gen/go/pannpers/scaffold/connectrpc/go v1.18.1-20250731122303-38f22112218d.1
+	buf.build/gen/go/pannpers/scaffold/protocolbuffers/go v1.36.6-20250731122303-38f22112218d.1
 	connectrpc.com/connect v1.18.1
 	connectrpc.com/grpchealth v1.4.0
 	connectrpc.com/otelconnect v0.7.2
@@ -11,7 +13,6 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.6.0
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/pannpers/protobuf-scaffold v1.1.0
 	github.com/uptrace/bun v1.2.15
 	github.com/uptrace/bun/dialect/pgdialect v1.2.15
 	github.com/uptrace/bun/driver/pgdriver v1.2.15
@@ -26,7 +27,7 @@ require (
 	4d63.com/gocheckcompilerdirectives v1.3.0 // indirect
 	4d63.com/gochecknoglobals v0.2.2 // indirect
 	buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.36.6-20250121211742-6d880cc6cc8d.1 // indirect
-	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250613105001-9f2d3c737feb.1 // indirect
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250717185734-6c6e0d3c608e.1 // indirect
 	buf.build/gen/go/bufbuild/registry/connectrpc/go v1.18.1-20250606164443-9d1800bf4ccc.1 // indirect
 	buf.build/gen/go/bufbuild/registry/protocolbuffers/go v1.36.6-20250606164443-9d1800bf4ccc.1 // indirect
 	buf.build/gen/go/pluginrpc/pluginrpc/protocolbuffers/go v1.36.6-20241007202033-cf42259fcbfc.1 // indirect

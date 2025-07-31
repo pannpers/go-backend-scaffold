@@ -17,7 +17,7 @@ import (
 	"github.com/pannpers/go-backend-scaffold/pkg/config"
 	"github.com/pannpers/go-backend-scaffold/pkg/logging"
 	"github.com/pannpers/go-backend-scaffold/pkg/telemetry"
-	"github.com/pannpers/protobuf-scaffold/gen/go/proto/api/v1/v1connect"
+	v1connect "buf.build/gen/go/pannpers/scaffold/connectrpc/go/pannpers/api/v1/apiv1connect"
 )
 
 // provideConfig creates a new config instance.

@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/pannpers/go-backend-scaffold/internal/entity"
-	proto "github.com/pannpers/protobuf-scaffold/gen/go/proto/entity/v1"
+	proto "buf.build/gen/go/pannpers/scaffold/protocolbuffers/go/pannpers/entity/v1"
 )
 
 // UserToProto converts domain User entity to protobuf User.

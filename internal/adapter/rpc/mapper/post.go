@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/pannpers/go-backend-scaffold/internal/entity"
-	proto "github.com/pannpers/protobuf-scaffold/gen/go/proto/entity/v1"
+	proto "buf.build/gen/go/pannpers/scaffold/protocolbuffers/go/pannpers/entity/v1"
 )
 
 // PostToProto converts domain Post entity to protobuf Post.
@@ -60,4 +60,12 @@ func NewPostFromProto(protoPost *proto.Post, userID string) *entity.NewPost {
 	}
 
 	return newPost
+}
+
+// NewPostFromCreateRequest converts CreatePostRequest fields to domain NewPost for creation.
+func NewPostFromCreateRequest(title, authorID string) *entity.NewPost {
+	return &entity.NewPost{
+		Title:  title,
+		UserID: authorID,
+	}
 }

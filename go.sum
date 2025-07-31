@@ -4,12 +4,16 @@
 4d63.com/gochecknoglobals v0.2.2/go.mod h1:lLxwTQjL5eIesRbvnzIP3jZtG140FnTdz+AlMa+ogt0=
 buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.36.6-20250121211742-6d880cc6cc8d.1 h1:f6miF8tK6H+Ktad24WpnNfpHO75GRGk0rhJ1mxPXqgA=
 buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.36.6-20250121211742-6d880cc6cc8d.1/go.mod h1:rvbyamNtvJ4o3ExeCmaG5/6iHnu0vy0E+UQ+Ph0om8s=
-buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250613105001-9f2d3c737feb.1 h1:AUL6VF5YWL01j/1H/DQbPUSDkEwYqwVCNw7yhbpOxSQ=
-buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250613105001-9f2d3c737feb.1/go.mod h1:avRlCjnFzl98VPaeCtJ24RrV/wwHFzB8sWXhj26+n/U=
+buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250717185734-6c6e0d3c608e.1 h1:Lg6klmCi3v7VvpqeeLEER9/m5S8y9e9DjhqQnSCNy4k=
+buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250717185734-6c6e0d3c608e.1/go.mod h1:avRlCjnFzl98VPaeCtJ24RrV/wwHFzB8sWXhj26+n/U=
 buf.build/gen/go/bufbuild/registry/connectrpc/go v1.18.1-20250606164443-9d1800bf4ccc.1 h1:x7juyChlm/fXZyuJTdBeMzHwAMhPJkP0qE4/IpwpGX4=
 buf.build/gen/go/bufbuild/registry/connectrpc/go v1.18.1-20250606164443-9d1800bf4ccc.1/go.mod h1:vi8xjh+6SQRvLQYnyVFZ7kOBrFevwFudusxWVc6E58A=
 buf.build/gen/go/bufbuild/registry/protocolbuffers/go v1.36.6-20250606164443-9d1800bf4ccc.1 h1:iiP7EL8EWrWmxn9qPDQTFdVSu04qIrmglpyjC10K4IU=
 buf.build/gen/go/bufbuild/registry/protocolbuffers/go v1.36.6-20250606164443-9d1800bf4ccc.1/go.mod h1:bUPpZtzAkcnTA7OLfKCvkvkxEAC6dG/ZIlbnbUJicL4=
+buf.build/gen/go/pannpers/scaffold/connectrpc/go v1.18.1-20250731122303-38f22112218d.1 h1:Eqk4mC1nLOE9l7pLaMM66EZzlFg5OKZ73l20av6gO+s=
+buf.build/gen/go/pannpers/scaffold/connectrpc/go v1.18.1-20250731122303-38f22112218d.1/go.mod h1:WfleeMi6Nvt8rpzL1LTlGeH84o3D+aEwiax2AYqr3Ak=
+buf.build/gen/go/pannpers/scaffold/protocolbuffers/go v1.36.6-20250731122303-38f22112218d.1 h1:Gul7R952/TXFfi1hJ13t5upk5Zzv7Nmxy2lSpShmweU=
+buf.build/gen/go/pannpers/scaffold/protocolbuffers/go v1.36.6-20250731122303-38f22112218d.1/go.mod h1:ieg3xl4jEvCfA4yfwvq+EHl2lLUGxG9e6e9NO62+3Yo=
 buf.build/gen/go/pluginrpc/pluginrpc/protocolbuffers/go v1.36.6-20241007202033-cf42259fcbfc.1 h1:trcsXBDm8exui7mvndZnvworCyBq1xuMnod2N0j79K8=
 buf.build/gen/go/pluginrpc/pluginrpc/protocolbuffers/go v1.36.6-20241007202033-cf42259fcbfc.1/go.mod h1:OUbhXurY+VHFGn9FBxcRy8UB7HXk9NvJ2qCgifOMypQ=
 buf.build/go/app v0.1.0 h1:nlqD/h0rhIN73ZoiDElprrPiO2N6JV+RmNK34K29Ihg=
@@ -457,8 +461,6 @@ github.com/otiai10/curr v0.0.0-20150429015615-9b4961190c95/go.mod h1:9qAhocn7zKJ
 github.com/otiai10/curr v1.0.0/go.mod h1:LskTG5wDwr8Rs+nNQ+1LlxRjAtTZZjtJW4rMXl6j4vs=
 github.com/otiai10/mint v1.3.0/go.mod h1:F5AjcsTsWUqX+Na9fpHb52P8pcRX2CI6A3ctIT91xUo=
 github.com/otiai10/mint v1.3.1/go.mod h1:/yxELlJQ0ufhjUwhshSj+wFjZ78CnZ48/1wtmBH1OTc=
-github.com/pannpers/protobuf-scaffold v1.1.0 h1:G/jDIGWFpZ9E7JnzorqFsWUo2cvVorhQhHClk0I5Rks=
-github.com/pannpers/protobuf-scaffold v1.1.0/go.mod h1:aOf8ehsNRFgTJ4BUOFnqWHU1NgE9OVSNU98rRJQ0o9Q=
 github.com/pelletier/go-toml v1.9.5 h1:4yBQzkHv+7BHq2PQUZF3Mx0IYxG7LsP222s7Agd3ve8=
 github.com/pelletier/go-toml v1.9.5/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCkoOuaOx1Y+c=
 github.com/pelletier/go-toml/v2 v2.2.4 h1:mye9XuhQ6gvn5h28+VilKrrPoQVanw5PMw/TB0t5Ec4=
