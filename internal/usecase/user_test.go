@@ -45,7 +45,7 @@ func TestUserUseCase_CreateUser(t *testing.T) {
 			},
 			dep: func() dep {
 				mockRepo := entity.NewMockUserRepository(t)
-				logger := logging.New()
+				logger, _ := logging.New()
 
 				expectedUser := &entity.User{
 					ID:        "user-123",
@@ -85,7 +85,7 @@ func TestUserUseCase_CreateUser(t *testing.T) {
 			},
 			dep: func() dep {
 				mockRepo := entity.NewMockUserRepository(t)
-				logger := logging.New()
+				logger, _ := logging.New()
 
 				mockRepo.EXPECT().Create(context.Background(), &entity.NewUser{
 					Name:  "Jane Doe",
@@ -148,7 +148,7 @@ func TestUserUseCase_GetUser(t *testing.T) {
 			},
 			dep: func() dep {
 				mockRepo := entity.NewMockUserRepository(t)
-				logger := logging.New()
+				logger, _ := logging.New()
 
 				expectedUser := &entity.User{
 					ID:        "user-123",
@@ -182,7 +182,7 @@ func TestUserUseCase_GetUser(t *testing.T) {
 			},
 			dep: func() dep {
 				mockRepo := entity.NewMockUserRepository(t)
-				logger := logging.New()
+				logger, _ := logging.New()
 
 				// No expectations on mockRepo since validation happens before repo call
 
@@ -202,7 +202,7 @@ func TestUserUseCase_GetUser(t *testing.T) {
 			},
 			dep: func() dep {
 				mockRepo := entity.NewMockUserRepository(t)
-				logger := logging.New()
+				logger, _ := logging.New()
 
 				mockRepo.EXPECT().Get(context.Background(), "user-123").Return(nil, apperr.New(codes.NotFound, "user not found")).Once()
 
@@ -261,7 +261,7 @@ func TestUserUseCase_DeleteUser(t *testing.T) {
 			},
 			dep: func() dep {
 				mockRepo := entity.NewMockUserRepository(t)
-				logger := logging.New()
+				logger, _ := logging.New()
 
 				mockRepo.EXPECT().Delete(context.Background(), "user-123").Return(nil).Once()
 
@@ -280,7 +280,7 @@ func TestUserUseCase_DeleteUser(t *testing.T) {
 			},
 			dep: func() dep {
 				mockRepo := entity.NewMockUserRepository(t)
-				logger := logging.New()
+				logger, _ := logging.New()
 
 				// No expectations on mockRepo since validation happens before repo call
 
@@ -299,7 +299,7 @@ func TestUserUseCase_DeleteUser(t *testing.T) {
 			},
 			dep: func() dep {
 				mockRepo := entity.NewMockUserRepository(t)
-				logger := logging.New()
+				logger, _ := logging.New()
 
 				mockRepo.EXPECT().Delete(context.Background(), "user-123").Return(apperr.New(codes.Internal, "failed to delete user")).Once()
 
@@ -331,6 +331,8 @@ func TestUserUseCase_DeleteUser(t *testing.T) {
 }
 
 func TestNewUserUseCase(t *testing.T) {
+	logger, _ := logging.New()
+
 	type args struct {
 		userRepo entity.UserRepository
 		logger   *logging.Logger
@@ -345,7 +347,7 @@ func TestNewUserUseCase(t *testing.T) {
 			name: "return UserUseCase with provided dependencies",
 			args: args{
 				userRepo: entity.NewMockUserRepository(t),
-				logger:   logging.New(),
+				logger:   logger,
 			},
 			want: &usecase.UserUseCase{},
 		},

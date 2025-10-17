@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	v1connect "buf.build/gen/go/pannpers/scaffold/connectrpc/go/pannpers/api/v1/apiv1connect"
 	"connectrpc.com/connect"
 	"connectrpc.com/grpchealth"
 	"github.com/pannpers/go-backend-scaffold/internal/adapter/rpc"
@@ -17,7 +18,6 @@ import (
 	"github.com/pannpers/go-backend-scaffold/pkg/config"
 	"github.com/pannpers/go-backend-scaffold/pkg/logging"
 	"github.com/pannpers/go-backend-scaffold/pkg/telemetry"
-	v1connect "buf.build/gen/go/pannpers/scaffold/connectrpc/go/pannpers/api/v1/apiv1connect"
 )
 
 // provideConfig creates a new config instance.
@@ -49,7 +49,12 @@ func provideLogger(cfg *config.Config) *logging.Logger {
 		opts = append(opts, logging.WithFormat(logging.FormatJSON))
 	}
 
-	return logging.New(opts...)
+	logger, err := logging.New(opts...)
+	if err != nil {
+		panic("Failed to create logger: " + err.Error())
+	}
+
+	return logger
 }
 
 // provideDatabase creates a new database instance.

@@ -40,7 +40,7 @@ func NewConnectServer(
 	// Create interceptors
 	tracingInterceptor, _ := otelconnect.NewInterceptor()
 	accessLogInterceptor := logging.NewAccessLogInterceptor(logger)
-	errorInterceptor := apperr.NewInterceptor(logger)
+	errorInterceptor := apperr.NewConnectInterceptor(logger)
 
 	for _, handlerFunc := range handlerFuncs {
 		path, handler := handlerFunc(

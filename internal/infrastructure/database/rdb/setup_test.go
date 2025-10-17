@@ -47,7 +47,10 @@ func setupTestDatabase() *rdb.Database {
 		},
 	}
 
-	logger := logging.New()
+	logger, err := logging.New()
+	if err != nil {
+		panic("Failed to create logger: " + err.Error())
+	}
 	ctx := context.Background()
 
 	// Create database connection using rdb.New()

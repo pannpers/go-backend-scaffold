@@ -42,7 +42,7 @@ func TestPostUseCase_CreatePost(t *testing.T) {
 			},
 			dep: func() dep {
 				mockRepo := entity.NewMockPostRepository(t)
-				logger := logging.New()
+				logger, _ := logging.New()
 
 				expectedPost := &entity.Post{
 					ID:        "post-456",
@@ -82,7 +82,7 @@ func TestPostUseCase_CreatePost(t *testing.T) {
 			},
 			dep: func() dep {
 				mockRepo := entity.NewMockPostRepository(t)
-				logger := logging.New()
+				logger, _ := logging.New()
 
 				mockRepo.EXPECT().Create(context.Background(), &entity.NewPost{
 					Title:  "Failed Post",
@@ -145,7 +145,7 @@ func TestPostUseCase_GetPost(t *testing.T) {
 			},
 			dep: func() dep {
 				mockRepo := entity.NewMockPostRepository(t)
-				logger := logging.New()
+				logger, _ := logging.New()
 
 				expectedPost := &entity.Post{
 					ID:        "post-123",
@@ -179,7 +179,7 @@ func TestPostUseCase_GetPost(t *testing.T) {
 			},
 			dep: func() dep {
 				mockRepo := entity.NewMockPostRepository(t)
-				logger := logging.New()
+				logger, _ := logging.New()
 
 				// No expectations on mockRepo since validation happens before repo call
 
@@ -199,7 +199,7 @@ func TestPostUseCase_GetPost(t *testing.T) {
 			},
 			dep: func() dep {
 				mockRepo := entity.NewMockPostRepository(t)
-				logger := logging.New()
+				logger, _ := logging.New()
 
 				mockRepo.EXPECT().Get(context.Background(), "post-123").Return(nil, apperr.New(codes.NotFound, "post not found")).Once()
 
@@ -258,7 +258,7 @@ func TestPostUseCase_DeletePost(t *testing.T) {
 			},
 			dep: func() dep {
 				mockRepo := entity.NewMockPostRepository(t)
-				logger := logging.New()
+				logger, _ := logging.New()
 
 				mockRepo.EXPECT().Delete(context.Background(), "post-123").Return(nil).Once()
 
@@ -277,7 +277,7 @@ func TestPostUseCase_DeletePost(t *testing.T) {
 			},
 			dep: func() dep {
 				mockRepo := entity.NewMockPostRepository(t)
-				logger := logging.New()
+				logger, _ := logging.New()
 
 				// No expectations on mockRepo since validation happens before repo call
 
@@ -296,7 +296,7 @@ func TestPostUseCase_DeletePost(t *testing.T) {
 			},
 			dep: func() dep {
 				mockRepo := entity.NewMockPostRepository(t)
-				logger := logging.New()
+				logger, _ := logging.New()
 
 				mockRepo.EXPECT().Delete(context.Background(), "post-123").Return(apperr.New(codes.Internal, "failed to delete post")).Once()
 
@@ -328,6 +328,8 @@ func TestPostUseCase_DeletePost(t *testing.T) {
 }
 
 func TestNewPostUseCase(t *testing.T) {
+	logger, _ := logging.New()
+
 	type args struct {
 		postRepo entity.PostRepository
 		logger   *logging.Logger
@@ -342,7 +344,7 @@ func TestNewPostUseCase(t *testing.T) {
 			name: "return PostUseCase with provided dependencies",
 			args: args{
 				postRepo: entity.NewMockPostRepository(t),
-				logger:   logging.New(),
+				logger:   logger,
 			},
 			want: &usecase.PostUseCase{},
 		},
