@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/legalforce/saleson-app-prototype-v2/backend/pkg/logging"
+	"github.com/pannpers/go-backend-scaffold/pkg/logging"
 )
 
 func TestDefaultOptions(t *testing.T) {

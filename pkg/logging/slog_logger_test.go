@@ -10,9 +10,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/pannpers/go-backend-scaffold/pkg/logging"
 	"go.opentelemetry.io/otel/trace"
-
-	"github.com/legalforce/saleson-app-prototype-v2/backend/pkg/logging"
 )
 
 // contextWithTrace creates a new context with a span context derived from the given trace and span ID hex strings.
