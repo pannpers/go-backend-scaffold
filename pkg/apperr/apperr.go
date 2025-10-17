@@ -7,7 +7,7 @@
 // AppErr is the main error type that wraps errors with additional context including:
 //   - Status codes from pkg/apperr/codes for API compatibility
 //   - Structured logging attributes
-//   - Automatic stack trace capture
+//   - Automatic stack trace capture (configurable)
 //   - Error chain unwrapping support
 //
 // # Basic Usage
@@ -20,6 +20,26 @@
 //	// Wrap an existing error
 //	err = apperr.Wrap(dbErr, codes.Internal, "failed to get user",
 //		slog.String("user_id", userID))
+//
+// # Stacktrace Configuration
+//
+// Stack traces are captured automatically but NOT included in logs by default for
+// performance and security reasons. Enable them explicitly for development/debugging:
+//
+//	// Enable stacktraces in development
+//	apperr.Configure(
+//		apperr.WithStacktrace(true),
+//	)
+//
+//	// Disable stacktraces in production (default)
+//	apperr.Configure(
+//		apperr.WithStacktrace(false),
+//	)
+//
+//	// Check current setting
+//	if apperr.IsStacktraceEnabled() {
+//		// Stacktraces are being logged
+//	}
 //
 // # Error Comparison
 //
@@ -39,6 +59,7 @@
 //
 //	logger.Error("operation failed", slog.Any("error", err))
 //	// Logs: {"msg": "operation failed", "error": {"msg": "...", "code": "...", "cause": "..."}}
+//	// Note: stacktrace only included if Configure(WithStacktrace(true))
 //
 // # Error Chain Unwrapping
 //
@@ -51,17 +72,6 @@
 //
 //	// Unwrap to get the original cause
 //	originalErr := errors.Unwrap(err)
-//
-// # Predefined Error Variables
-//
-// The package provides predefined error variables for all status codes:
-//   - ErrCanceled, ErrUnknown, ErrInvalidArgument
-//   - ErrDeadlineExceeded, ErrNotFound, ErrAlreadyExists
-//   - ErrPermissionDenied, ErrResourceExhausted, ErrFailedPrecondition
-//   - ErrAborted, ErrOutOfRange, ErrUnimplemented
-//   - ErrInternal, ErrUnavailable, ErrDataLoss, ErrUnauthenticated
-//
-// These variables can be used directly or as targets for errors.Is comparisons.
 package apperr
 
 import (
@@ -154,8 +164,12 @@ func (e *AppErr) Unwrap() error {
 // Returns true if the target is an AppErr with the same Code, or if the Cause field matches the target.
 // This allows semantic error comparison based on error codes rather than exact instance matching.
 func (e *AppErr) Is(target error) bool {
-	if target == nil {
+	if target == nil || e == nil {
 		return false
+	}
+
+	if target == e { // same reference
+		return true
 	}
 
 	if t, ok := target.(*AppErr); ok {
@@ -169,10 +183,20 @@ func (e *AppErr) Is(target error) bool {
 // LogValue implements slog.LogValuer, allowing AppErr to be logged as structured attributes.
 // When used with slog, this will output all error context as structured fields including
 // message, code, cause, and any additional attributes.
+//
+// Stack traces are only included if explicitly enabled via Configure(WithStacktrace(true)).
+// By default, stacktraces are excluded for performance and security reasons.
 func (e *AppErr) LogValue() slog.Value {
+	if e == nil {
+		return slog.StringValue("<nil>")
+	}
+
 	attrs := []slog.Attr{
-		slog.String("msg", e.Msg),
 		slog.String("code", e.Code.String()),
+	}
+
+	if e.Msg != "" {
+		attrs = append(attrs, slog.String("msg", e.Msg))
 	}
 	if e.Cause != nil {
 		attrs = append(attrs, slog.String("cause", e.Cause.Error()))
@@ -190,7 +214,7 @@ func (e *AppErr) LogValue() slog.Value {
 
 // New creates a new AppErr instance without a cause error.
 // The message is automatically formatted to include the status code.
-// A stack trace is automatically captured and included in the attributes.
+// A stack trace is captured only if stacktrace logging is enabled via Configure(WithStacktrace(true)).
 // Use this when there is no underlying error to wrap.
 //
 // Example:
@@ -203,7 +227,9 @@ func (e *AppErr) LogValue() slog.Value {
 //		slog.String("user_id", "123"),
 //		slog.String("operation", "GetUser"))
 func New(code codes.Code, msg string, attrs ...slog.Attr) error {
-	attrs = append(attrs, withStack())
+	if IsStacktraceEnabled() {
+		attrs = append(attrs, withStack())
+	}
 
 	return &AppErr{
 		Code:  code,
@@ -216,7 +242,7 @@ func New(code codes.Code, msg string, attrs ...slog.Attr) error {
 // If the error is already an AppErr, it will be flattened and the messages will be concatenated.
 //
 // Note: When wrapping an existing AppErr, its original Code field will be overridden by the given code.
-// A stack trace is automatically captured and included in the attributes.
+// A stack trace is captured only if stacktrace logging is enabled via Configure(WithStacktrace(true)).
 // Use this to wrap existing errors with additional context and status code.
 //
 // Example:
@@ -229,12 +255,11 @@ func New(code codes.Code, msg string, attrs ...slog.Attr) error {
 //	err = apperr.Wrap(appErr, codes.NotFound, "user lookup failed")
 //	// Result: "user lookup failed (NotFound): original message"
 func Wrap(err error, code codes.Code, msg string, attrs ...slog.Attr) error {
-	attrs = append(attrs, withStack())
-
-	// If err is already an AppErr, flatten the chain
 	var appErr *AppErr
 	if !errors.As(err, &appErr) {
-		// Original behavior for non-AppErr errors
+		if IsStacktraceEnabled() {
+			attrs = append(attrs, withStack())
+		}
 		return &AppErr{
 			Cause: err,
 			Code:  code,
@@ -242,20 +267,16 @@ func Wrap(err error, code codes.Code, msg string, attrs ...slog.Attr) error {
 			Attrs: attrs,
 		}
 	}
+	// If err is already an AppErr, flatten the chain.
+	// Note that stack trace is not appended here because it's already included
+	// in the original AppErr.
 
 	// Concatenate messages: new message + old AppErr's message
 	combinedMsg := fmt.Sprintf("%s (%s): %s", msg, code, appErr.Msg)
 
-	// Merge attributes, keeping original stack trace and filtering duplicates from new attrs
 	var mergedAttrs []slog.Attr
 	mergedAttrs = append(mergedAttrs, appErr.Attrs...)
-
-	// Add new attributes, but skip stack traces to avoid duplication
-	for _, attr := range attrs {
-		if attr.Key != "stacktrace" {
-			mergedAttrs = append(mergedAttrs, attr)
-		}
-	}
+	mergedAttrs = append(mergedAttrs, attrs...)
 
 	cause := appErr.Cause
 	if cause == nil {

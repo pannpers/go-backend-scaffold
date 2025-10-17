@@ -328,6 +328,7 @@ func TestAppErr_LogValue(t *testing.T) {
 }
 
 func validateAttrsGroup(t *testing.T, attrsGroup []slog.Attr, wantAttrs map[string]string) {
+	t.Helper()
 	for _, attr := range attrsGroup {
 		if _, exists := wantAttrs[attr.Key]; !exists {
 			t.Errorf("Unexpected attribute found in attrs group: %s=%s", attr.Key, attr.Value.String())
@@ -338,6 +339,11 @@ func validateAttrsGroup(t *testing.T, attrsGroup []slog.Attr, wantAttrs map[stri
 // Constructor tests - verify New and Wrap functions work correctly
 
 func TestNew(t *testing.T) {
+	// Don't run in parallel - modifies global state
+	// Save original setting
+	originalSetting := IsStacktraceEnabled()
+	defer Configure(WithStacktrace(originalSetting))
+
 	type args struct {
 		code  codes.Code
 		msg   string
@@ -352,9 +358,10 @@ func TestNew(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
-		args args
-		want want
+		name              string
+		args              args
+		want              want
+		includeStacktrace bool
 	}{
 		{
 			name: "creates AppErr with attributes and stack trace",
@@ -369,6 +376,7 @@ func TestNew(t *testing.T) {
 				attrs:    []slog.Attr{slog.String("field", "email"), slog.String("value", "invalid-email")},
 				errorStr: "invalid email format (invalid_argument)",
 			},
+			includeStacktrace: true,
 		},
 		{
 			name: "creates AppErr without additional attributes",
@@ -383,11 +391,30 @@ func TestNew(t *testing.T) {
 				attrs:    nil,
 				errorStr: "internal server error (internal)",
 			},
+			includeStacktrace: true,
+		},
+		{
+			name: "creates AppErr without stacktrace when disabled",
+			args: args{
+				code:  codes.NotFound,
+				msg:   "resource not found",
+				attrs: []slog.Attr{slog.String("resource", "user")},
+			},
+			want: want{
+				err:      ErrNotFound,
+				code:     codes.NotFound,
+				attrs:    []slog.Attr{slog.String("resource", "user")},
+				errorStr: "resource not found (not_found)",
+			},
+			includeStacktrace: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Don't run in parallel - modifies global state
+			Configure(WithStacktrace(tt.includeStacktrace))
+
 			err := New(tt.args.code, tt.args.msg, tt.args.attrs...)
 
 			// Assert that errors.Is(err, want.err) is true
@@ -411,22 +438,34 @@ func TestNew(t *testing.T) {
 			}
 
 			// Test attributes
-			expectedCount := len(tt.want.attrs) + 1 // +1 for stacktrace
+			expectedCount := len(tt.want.attrs)
+			if tt.includeStacktrace {
+				expectedCount++ // +1 for stacktrace when enabled
+			}
 			if len(appErr.Attrs) != expectedCount {
 				t.Errorf("Expected %d attributes, got %d", expectedCount, len(appErr.Attrs))
 			}
 
 			// Validate each attribute
+			hasStacktrace := false
 			for _, attr := range appErr.Attrs {
 				if attr.Key == "stacktrace" {
-					validateStackTrace(t, attr.Value.String())
-
+					hasStacktrace = true
+					if tt.includeStacktrace {
+						validateStackTrace(t, attr.Value.String())
+					} else {
+						t.Errorf("Found stacktrace attribute when it should be disabled")
+					}
 					continue
 				}
 
 				if !containsAttr(tt.want.attrs, attr) {
 					t.Errorf("Unexpected attribute found: %s = %s", attr.Key, attr.Value.String())
 				}
+			}
+
+			if tt.includeStacktrace && !hasStacktrace {
+				t.Errorf("Expected stacktrace attribute but it was not found")
 			}
 
 			// Test error string
@@ -437,7 +476,12 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestWrap(t *testing.T) {
+func TestWrap(t *testing.T) { //nolint:gocyclo // Complex test with many scenarios
+	// Don't run in parallel - modifies global state
+	// Save original setting
+	originalSetting := IsStacktraceEnabled()
+	defer Configure(WithStacktrace(originalSetting))
+
 	type args struct {
 		err   error
 		code  codes.Code
@@ -454,9 +498,14 @@ func TestWrap(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
-		args args
-		want want
+		name              string
+		args              args
+		want              want
+		includeStacktrace bool
+		// setupErr is called to create the input error with the current stacktrace setting
+		setupErr func() error
+		// checkCause is a custom function to verify the cause field
+		checkCause func(t *testing.T, cause error)
 	}{
 		{
 			name: "wraps standard error with attributes and stack trace",
@@ -473,6 +522,7 @@ func TestWrap(t *testing.T) {
 				attrs:    []slog.Attr{slog.String("user_id", "123"), slog.String("operation", "create_user")},
 				errorStr: "failed to create user: sql: no rows in result set (not_found)",
 			},
+			includeStacktrace: true,
 		},
 		{
 			name: "wraps standard error without additional attributes",
@@ -489,43 +539,61 @@ func TestWrap(t *testing.T) {
 				attrs:    nil,
 				errorStr: "invalid input: sql: transaction has already been committed or rolled back (failed_precondition)",
 			},
+			includeStacktrace: true,
 		},
 		{
 			name: "flattens AppErr created by New and concatenates messages",
 			args: args{
-				err:   New(codes.InvalidArgument, "invalid email format", slog.String("field", "email")),
 				code:  codes.Internal,
 				msg:   "failed to create user",
 				attrs: []slog.Attr{slog.String("user_id", "123"), slog.String("operation", "create_user")},
 			},
 			want: want{
 				err:      ErrInternal,
-				cause:    New(codes.InvalidArgument, "invalid email format", slog.String("field", "email")), // AppErr is used if cause is nil
 				code:     codes.Internal,
 				attrs:    []slog.Attr{slog.String("field", "email"), slog.String("user_id", "123"), slog.String("operation", "create_user")},
 				errorStr: "failed to create user (internal): invalid email format (invalid_argument)",
+			},
+			includeStacktrace: true,
+			setupErr: func() error {
+				return New(codes.InvalidArgument, "invalid email format", slog.String("field", "email"))
+			},
+			checkCause: func(t *testing.T, cause error) {
+				t.Helper()
+				// When wrapping an AppErr without a cause, it becomes the cause itself
+				if cause == nil {
+					t.Errorf("Wrap() Cause should be the input AppErr when it has no cause, got nil")
+				}
 			},
 		},
 		{
 			name: "flattens AppErr created by New without additional attributes",
 			args: args{
-				err:   New(codes.NotFound, "user not found"),
 				code:  codes.Internal,
 				msg:   "database operation failed",
 				attrs: nil,
 			},
 			want: want{
 				err:      ErrInternal,
-				cause:    New(codes.NotFound, "user not found"), // AppErr is used if cause is nil
 				code:     codes.Internal,
 				attrs:    nil,
 				errorStr: "database operation failed (internal): user not found (not_found)",
+			},
+			includeStacktrace: true,
+			setupErr: func() error {
+				return New(codes.NotFound, "user not found")
+			},
+			checkCause: func(t *testing.T, cause error) {
+				t.Helper()
+				// When wrapping an AppErr without a cause, it becomes the cause itself
+				if cause == nil {
+					t.Errorf("Wrap() Cause should be the input AppErr when it has no cause, got nil")
+				}
 			},
 		},
 		{
 			name: "flattens AppErr created by Wrap and preserves original cause",
 			args: args{
-				err:   Wrap(sql.ErrNoRows, codes.NotFound, "invalid input"),
 				code:  codes.Internal,
 				msg:   "failed to process request",
 				attrs: []slog.Attr{slog.String("request_id", "abc123")},
@@ -537,12 +605,48 @@ func TestWrap(t *testing.T) {
 				attrs:    []slog.Attr{slog.String("request_id", "abc123")},
 				errorStr: "failed to process request (internal): invalid input: sql: no rows in result set (not_found)",
 			},
+			includeStacktrace: true,
+			setupErr: func() error {
+				return Wrap(sql.ErrNoRows, codes.NotFound, "invalid input")
+			},
+		},
+		{
+			name: "wraps error without stacktrace when disabled",
+			args: args{
+				err:   errors.New("some error"),
+				code:  codes.Unknown,
+				msg:   "operation failed",
+				attrs: []slog.Attr{slog.String("id", "456")},
+			},
+			want: want{
+				err:      ErrUnknown,
+				code:     codes.Unknown,
+				attrs:    []slog.Attr{slog.String("id", "456")},
+				errorStr: "operation failed: some error (unknown)",
+			},
+			includeStacktrace: false,
+			checkCause: func(t *testing.T, cause error) {
+				t.Helper()
+				// For standard errors.New(), just check the error message
+				if cause == nil || cause.Error() != "some error" {
+					t.Errorf("Wrap() Cause = %v, want error with message 'some error'", cause)
+				}
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := Wrap(tt.args.err, tt.args.code, tt.args.msg, tt.args.attrs...)
+			// Don't run in parallel - modifies global state
+			Configure(WithStacktrace(tt.includeStacktrace))
+
+			// Setup the input error
+			inputErr := tt.args.err
+			if tt.setupErr != nil {
+				inputErr = tt.setupErr()
+			}
+
+			err := Wrap(inputErr, tt.args.code, tt.args.msg, tt.args.attrs...)
 
 			// Assert that errors.Is(err, want.err) is true
 			if !errors.Is(err, tt.want.err) {
@@ -555,8 +659,10 @@ func TestWrap(t *testing.T) {
 				t.Fatal("Wrap() should return an error that can be converted to *AppErr")
 			}
 
-			// Test basic fields
-			if tt.want.cause == nil {
+			// Test cause field with custom check if provided
+			if tt.checkCause != nil {
+				tt.checkCause(t, appErr.Cause)
+			} else if tt.want.cause == nil {
 				if appErr.Cause != nil {
 					t.Errorf("Wrap() Cause should be nil, got %v", appErr.Cause)
 				}
@@ -571,22 +677,34 @@ func TestWrap(t *testing.T) {
 			}
 
 			// Test attributes
-			expectedCount := len(tt.want.attrs) + 1 // +1 for stacktrace
+			expectedCount := len(tt.want.attrs)
+			if tt.includeStacktrace {
+				expectedCount++ // +1 for stacktrace when enabled
+			}
 			if len(appErr.Attrs) != expectedCount {
 				t.Errorf("Expected %d attributes, got %d", expectedCount, len(appErr.Attrs))
 			}
 
 			// Validate each attribute
+			hasStacktrace := false
 			for _, attr := range appErr.Attrs {
 				if attr.Key == "stacktrace" {
-					validateStackTrace(t, attr.Value.String())
-
+					hasStacktrace = true
+					if tt.includeStacktrace {
+						validateStackTrace(t, attr.Value.String())
+					} else {
+						t.Errorf("Found stacktrace attribute when it should be disabled")
+					}
 					continue
 				}
 
 				if !containsAttr(tt.want.attrs, attr) {
 					t.Errorf("Unexpected attribute found: %s = %s", attr.Key, attr.Value.String())
 				}
+			}
+
+			if tt.includeStacktrace && !hasStacktrace {
+				t.Errorf("Expected stacktrace attribute but it was not found")
 			}
 
 			// Test error string
@@ -608,6 +726,7 @@ func TestWrap(t *testing.T) {
 // validateStackTrace validates that the stack trace is properly formatted
 // and contains expected package information, and that the caller is present in the first stack frame.
 func validateStackTrace(t *testing.T, stackTrace string) {
+	t.Helper()
 	if stackTrace == "" {
 		t.Error("Stack trace should not be empty")
 	}
