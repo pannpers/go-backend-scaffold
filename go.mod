@@ -1,6 +1,14 @@
 module github.com/pannpers/go-backend-scaffold
 
-go 1.24.4
+go 1.25
+
+tool (
+	github.com/bufbuild/buf/cmd/buf
+	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
+	github.com/google/wire/cmd/wire
+	github.com/vektra/mockery/v3
+	mvdan.cc/gofumpt
+)
 
 require (
 	buf.build/gen/go/pannpers/scaffold/connectrpc/go v1.18.1-20250731122303-38f22112218d.1
@@ -8,19 +16,19 @@ require (
 	connectrpc.com/connect v1.18.1
 	connectrpc.com/grpchealth v1.4.0
 	connectrpc.com/otelconnect v0.7.2
-	github.com/bufbuild/buf v1.55.1
-	github.com/golangci/golangci-lint/v2 v2.3.0
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.6.0
 	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/stretchr/testify v1.10.0
 	github.com/uptrace/bun v1.2.15
 	github.com/uptrace/bun/dialect/pgdialect v1.2.15
 	github.com/uptrace/bun/driver/pgdriver v1.2.15
 	github.com/uptrace/bun/extra/bundebug v1.2.15
-	github.com/vektra/mockery/v3 v3.5.1
+	go.opentelemetry.io/otel v1.37.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.33.0
 	go.opentelemetry.io/otel/sdk v1.36.0
-	mvdan.cc/gofumpt v0.8.0
+	go.opentelemetry.io/otel/trace v1.37.0
+	google.golang.org/protobuf v1.36.6 // indirect
 )
 
 require (
@@ -71,6 +79,7 @@ require (
 	github.com/breml/bidichk v0.3.3 // indirect
 	github.com/breml/errchkjson v0.4.1 // indirect
 	github.com/brunoga/deep v1.2.4 // indirect
+	github.com/bufbuild/buf v1.55.1 // indirect
 	github.com/bufbuild/protocompile v0.14.1 // indirect
 	github.com/bufbuild/protoplugin v0.0.0-20250218205857-750e09ce93e1 // indirect
 	github.com/butuzov/ireturn v0.4.0 // indirect
@@ -132,6 +141,7 @@ require (
 	github.com/golangci/dupl v0.0.0-20250308024227-f665c8d69b32 // indirect
 	github.com/golangci/go-printf-func-name v0.1.0 // indirect
 	github.com/golangci/gofmt v0.0.0-20250106114630-d62b90e6713d // indirect
+	github.com/golangci/golangci-lint/v2 v2.3.0 // indirect
 	github.com/golangci/golines v0.0.0-20250217134842-442fd0091d95 // indirect
 	github.com/golangci/misspell v0.7.0 // indirect
 	github.com/golangci/plugin-module-register v0.1.2 // indirect
@@ -273,6 +283,7 @@ require (
 	github.com/uudashr/gocognit v1.2.0 // indirect
 	github.com/uudashr/iface v1.4.1 // indirect
 	github.com/vbatts/tar-split v0.12.1 // indirect
+	github.com/vektra/mockery/v3 v3.5.1 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
@@ -319,13 +330,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/tools v0.6.1 // indirect
 	mellium.im/sasl v0.3.2 // indirect
+	mvdan.cc/gofumpt v0.8.0 // indirect
 	mvdan.cc/unparam v0.0.0-20250301125049-0df0534333a4 // indirect
 	pluginrpc.com/pluginrpc v0.5.0 // indirect
-)
-
-require (
-	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/otel v1.37.0
-	go.opentelemetry.io/otel/trace v1.37.0
-	google.golang.org/protobuf v1.36.6 // indirect
 )
